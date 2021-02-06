@@ -32,15 +32,25 @@ class ProjectPrameters():
 
         # feature
         self.parser.add_argument(
-            '--maxImageSize', type=int, default=200, help='the maximum image size.')
+            '--maxImageSize', type=int, default=224, help='the maximum image size.')
 
         # train
         self.parser.add_argument(
             '--batchSize', type=int, default=32, help='how many samples per batch to load.')
+        self.parser.add_argument('--optimizer', type=str, default='adam', choices=[
+                                 'adam', 'sgd'], help='the optimizer whil training model.')
+        self.parser.add_argument(
+            '--lr', type=float, default=1e-3, help='the learning rate.')
+        self.parser.add_argument(
+            '--weightDecay', type=float, default=0., help='the weight decay of optimizer (L2 penalty).')
+        self.parser.add_argument(
+            '--momentum', type=float, default=0.1, help='the momentum factor of the SGD optimizer.')
 
         # model
         self.parser.add_argument('--modelType', type=str, default='single', choices=[
                                  'single', 'multiple'], help='the model type. the single type is a classifier with multiclass. the multiple type is a binary classifier.')
+        self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[
+                                 'resnet18', 'wideresnet50', 'resnext50', 'vgg11bn', 'mobilenetv2'], help='the backbone model used for classification.')
 
         # debug
         self.parser.add_argument(
@@ -62,8 +72,8 @@ class ProjectPrameters():
         if projectParams.predefinedTask is not None:
             projectParams.dataPath = join(
                 './data/', projectParams.predefinedTask)
-
         if projectParams.dataType == ['none'] and projectParams.predefinedTask is None:
+            # get the dataType from the dataPath
             try:
                 dirs = listdir(join(projectParams.dataPath, 'train'))
                 projectParams.dataType = {dirname: idx for idx,
