@@ -26,10 +26,11 @@ def get_transform_dictionary(projectParams):
 
 
 class MyDataModule(pl.LightningDataModule):
-    def __init__(self, projectParams, transformDict):
+    def __init__(self, projectParams):
         super().__init__()
         self.projectParams = projectParams
-        self.transformDict = transformDict
+        self.transformDict = get_transform_dictionary(
+            projectParams=projectParams)
 
     def prepare_data(self):
         if self.projectParams.predefinedTask is None:
@@ -58,9 +59,7 @@ class MyDataModule(pl.LightningDataModule):
             self.dataset = {'train': trainSet,
                             'val': valSet, 'test': testSet}
             # get the dataType from the testSet
-            projectParams.dataType = testSet.class_to_idx
-        # get the numClasses from the dataType
-        projectParams.numClasses = len(projectParams.dataType)
+            self.projectParams.dataType = testSet.class_to_idx
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda)
@@ -77,8 +76,7 @@ if __name__ == "__main__":
     projectParams = ProjectPrameters().parse()
 
     # get dataset
-    dataset = MyDataModule(
-        projectParams=projectParams, transformDict=get_transform_dictionary(projectParams=projectParams))
+    dataset = MyDataModule(projectParams=projectParams)
 
     # get data loader
     dataset.prepare_data()
