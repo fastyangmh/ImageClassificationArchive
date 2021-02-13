@@ -29,6 +29,8 @@ class ProjectPrameters():
                                  help='the validation data size used for the predefined task.')
         self.parser.add_argument('--noCuda', action='store_true', default=False,
                                  help='whether to use Cuda to train the model. if True which will train the model on CPU. if False which will train on GPU.')
+        self.parser.add_argument('--valIter', type=self.str_to_int,
+                                 default=None, help='the number of validation iteration.')
 
         # feature
         self.parser.add_argument(
@@ -45,16 +47,20 @@ class ProjectPrameters():
             '--weightDecay', type=float, default=0., help='the weight decay of optimizer (L2 penalty).')
         self.parser.add_argument(
             '--momentum', type=float, default=0.1, help='the momentum factor of the SGD optimizer.')
+        self.parser.add_argument(
+            '--trainIter', type=int, default=100, help='the number of training iteration.')
 
         # model
-        self.parser.add_argument('--modelType', type=str, default='single', choices=[
-                                 'single', 'multiple'], help='the model type. the single type is a classifier with multiclass. the multiple type is a binary classifier.')
         self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[
                                  'resnet18', 'wideresnet50', 'resnext50', 'vgg11bn', 'mobilenetv2'], help='the backbone model used for classification.')
 
         # debug
         self.parser.add_argument(
             '--maxFiles', type=self.str_to_int, default=None, help='the maximum number of files.')
+        self.parser.add_argument('--report', type=str, default=None, choices=[
+                                 'simple', 'advanced'], help='whether to report the bottleneck.')
+        self.parser.add_argument('--weightsSummary', type=str, default=None, choices=[
+                                 'top', 'full'], help='whether to report the weight of the model.')
 
     def str_to_int(self, s):
         if s == 'None' or s == 'none':
@@ -80,7 +86,14 @@ class ProjectPrameters():
                                           dirname in enumerate(dirs)}
             except:
                 assert False, 'the dataPath does not exist the data.'
+        if projectParams.predefinedTask in ['mnist', 'cifar10']:
+            projectParams.numClasses = 10
+        else:
+            projectParams.numClasses = len(projectParams.dataType)
         projectParams.useCuda = torch.cuda.is_available() and not projectParams.noCuda
+        projectParams.gpus = -1 if projectParams.useCuda else 0
+        if projectParams.valIter is None:
+            projectParams.valIter = projectParams.trainIter
 
         return projectParams
 
