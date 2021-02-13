@@ -56,11 +56,19 @@ class Net(pl.LightningModule):
         self.classifier = get_classifier(projectParams=projectParams)
         self.activation = nn.Softmax(dim=-1)
         self.criterion = nn.CrossEntropyLoss()
-        self.projectParams = projectParams
         self.accuracy = pl.metrics.Accuracy()
+        self.confMat = pl.metrics.ConfusionMatrix(
+            num_classes=projectParams.numClasses)
+        self.projectParams = projectParams
 
     def forward(self, x):
         return self.activation(self.classifier(x))
+
+    def get_progress_bar_dict(self):
+        # don't show the version number
+        items = super().get_progress_bar_dict()
+        items.pop('loss', None)
+        return items
 
     def training_step(self, batch, batchIndex):
         x, y = batch
@@ -77,8 +85,7 @@ class Net(pl.LightningModule):
             epochAcc.append(stepDict['accuracy'].item())
         self.log('train epoch loss', np.mean(
             epochLoss), on_epoch=True, prog_bar=True)
-        self.log('train epoch accuracy', np.mean(
-            epochAcc), on_epoch=True, prog_bar=True)
+        self.log('train epoch accuracy', np.mean(epochAcc))
 
     def validation_step(self, batch, batchIndex):
         x, y = batch
@@ -95,8 +102,27 @@ class Net(pl.LightningModule):
             epochAcc.append(stepDict['accuracy'].item())
         self.log('validation epoch loss', np.mean(
             epochLoss), on_epoch=True, prog_bar=True)
-        self.log('validation epoch accuracy', np.mean(
-            epochAcc), on_epoch=True, prog_bar=True)
+        self.log('validation epoch accuracy', np.mean(epochAcc))
+
+    def test_step(self, batch, batchIndex):
+        x, y = batch
+        yhat = self.forward(x)
+        loss = self.criterion(yhat, y)
+        testAcc = self.accuracy(yhat, y)
+        return {'loss': loss, 'accuracy': testAcc, 'yPred': yhat, 'yTrue': y}
+
+    def test_epoch_end(self, outputs) -> None:
+        epochLoss = []
+        epochAcc = []
+        yPred = []
+        yTrue = []
+        for stepDict in outputs:
+            epochLoss.append(stepDict['loss'].item())
+            epochAcc.append(stepDict['accuracy'].item())
+            yPred.append(stepDict['yPred'])
+            yTrue.append(stepDict['yTrue'])
+        self.log('test epoch loss', np.mean(epochLoss))
+        self.log('test epoch accuracy', np.mean(epochAcc))
 
     def configure_optimizers(self):
         optimizer = get_optimizer(
