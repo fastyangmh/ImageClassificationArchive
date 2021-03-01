@@ -26,17 +26,19 @@ def get_trainer(projectParams):
 
 
 def train(projectParams):
-    result = {}
     pl.seed_everything(seed=projectParams.randomSeed)
-    myDataModule = MyDataModule(projectParams=projectParams)
+    dataset = MyDataModule(projectParams=projectParams)
     model = Net(projectParams=projectParams)
     trainer = get_trainer(projectParams=projectParams)
-    trainer.fit(model=model, datamodule=myDataModule)
+    trainer.fit(model=model, datamodule=dataset)
     result = {'trainer': trainer,
-              'model': model,
-              'train': trainer.test(test_dataloaders=myDataModule.train_dataloader()),
-              'val': trainer.test(test_dataloaders=myDataModule.val_dataloader()),
-              'test': trainer.test(test_dataloaders=myDataModule.test_dataloader())}
+              'model': model}
+    trainer.callback_connector.configure_progress_bar().disable()
+    for stage, dataLoader in zip(['train', 'val', 'test'], [dataset.train_dataloader(), dataset.val_dataloader(), dataset.test_dataloader()]):
+        print('\ntest the {} dataset'.format(stage))
+        print('the {} dataset confusion matrix:'.format(stage))
+        result[stage] = trainer.test(test_dataloaders=dataLoader)
+    trainer.callback_connector.configure_progress_bar().enable()
     return result
 
 
