@@ -11,11 +11,13 @@ from torch.utils.data import random_split, DataLoader
 
 
 def get_transform_dictionary(projectParams):
-    trainTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
+    trainTransform = transforms.Compose([transforms.Resize(size=(projectParams.maxImageSize, projectParams.maxImageSize)),
                                          transforms.ColorJitter(),
+                                         transforms.RandomRotation(degrees=90),
                                          transforms.RandomHorizontalFlip(),
                                          transforms.RandomVerticalFlip(),
-                                         transforms.ToTensor()])
+                                         transforms.ToTensor(),
+                                         transforms.RandomErasing()])
     valTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
                                        transforms.ToTensor()])
     testTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
