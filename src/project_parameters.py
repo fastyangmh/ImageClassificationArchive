@@ -86,6 +86,9 @@ class ProjectPrameters():
                                           dirname in enumerate(dirs)}
             except:
                 assert False, 'the dataPath does not exist the data.'
+        else:
+            projectParams.dataType = {dType: idx for idx,
+                                      dType in enumerate(projectParams.dataType)}
         if projectParams.predefinedTask in ['mnist', 'cifar10']:
             projectParams.numClasses = 10
         else:
