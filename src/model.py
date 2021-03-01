@@ -7,6 +7,7 @@ from torchvision.models import resnet18, wide_resnet50_2, resnext50_32x4d, vgg11
 import torch.nn as nn
 import numpy as np
 import torch.optim as optim
+import pandas as pd
 
 # def
 
@@ -56,11 +57,19 @@ class Net(pl.LightningModule):
         self.classifier = get_classifier(projectParams=projectParams)
         self.activation = nn.Softmax(dim=-1)
         self.criterion = nn.CrossEntropyLoss()
-        self.projectParams = projectParams
         self.accuracy = pl.metrics.Accuracy()
+        self.confMat = pl.metrics.ConfusionMatrix(
+            num_classes=projectParams.numClasses)
+        self.projectParams = projectParams
 
     def forward(self, x):
         return self.activation(self.classifier(x))
+
+    def get_progress_bar_dict(self):
+        # don't show the version number
+        items = super().get_progress_bar_dict()
+        items.pop('loss', None)
+        return items
 
     def training_step(self, batch, batchIndex):
         x, y = batch
@@ -77,8 +86,7 @@ class Net(pl.LightningModule):
             epochAcc.append(stepDict['accuracy'].item())
         self.log('train epoch loss', np.mean(
             epochLoss), on_epoch=True, prog_bar=True)
-        self.log('train epoch accuracy', np.mean(
-            epochAcc), on_epoch=True, prog_bar=True)
+        self.log('train epoch accuracy', np.mean(epochAcc))
 
     def validation_step(self, batch, batchIndex):
         x, y = batch
@@ -95,8 +103,32 @@ class Net(pl.LightningModule):
             epochAcc.append(stepDict['accuracy'].item())
         self.log('validation epoch loss', np.mean(
             epochLoss), on_epoch=True, prog_bar=True)
-        self.log('validation epoch accuracy', np.mean(
-            epochAcc), on_epoch=True, prog_bar=True)
+        self.log('validation epoch accuracy', np.mean(epochAcc))
+
+    def test_step(self, batch, batchIndex):
+        x, y = batch
+        yhat = self.forward(x)
+        loss = self.criterion(yhat, y)
+        testAcc = self.accuracy(yhat, y)
+        return {'loss': loss, 'accuracy': testAcc, 'yPred': yhat, 'yTrue': y}
+
+    def test_epoch_end(self, outputs) -> None:
+        epochLoss = []
+        epochAcc = []
+        yPred = []
+        yTrue = []
+        for stepDict in outputs:
+            epochLoss.append(stepDict['loss'].item())
+            epochAcc.append(stepDict['accuracy'].item())
+            yPred.append(stepDict['yPred'])
+            yTrue.append(stepDict['yTrue'])
+        self.log('test epoch loss', np.mean(epochLoss))
+        self.log('test epoch accuracy', np.mean(epochAcc))
+        yPred = torch.cat(yPred, 0)
+        yTrue = torch.cat(yTrue, 0)
+        confMat = pd.DataFrame(self.confMat(yPred, yTrue).tolist(), columns=self.projectParams.dataType.keys(
+        ), index=self.projectParams.dataType.keys()).astype(int)
+        print(confMat)
 
     def configure_optimizers(self):
         optimizer = get_optimizer(
