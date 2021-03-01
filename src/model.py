@@ -7,6 +7,7 @@ from torchvision.models import resnet18, wide_resnet50_2, resnext50_32x4d, vgg11
 import torch.nn as nn
 import numpy as np
 import torch.optim as optim
+import pandas as pd
 
 # def
 
@@ -123,6 +124,11 @@ class Net(pl.LightningModule):
             yTrue.append(stepDict['yTrue'])
         self.log('test epoch loss', np.mean(epochLoss))
         self.log('test epoch accuracy', np.mean(epochAcc))
+        yPred = torch.cat(yPred, 0)
+        yTrue = torch.cat(yTrue, 0)
+        confMat = pd.DataFrame(self.confMat(yPred, yTrue).tolist(), columns=self.projectParams.dataType.keys(
+        ), index=self.projectParams.dataType.keys()).astype(int)
+        print(confMat)
 
     def configure_optimizers(self):
         optimizer = get_optimizer(
