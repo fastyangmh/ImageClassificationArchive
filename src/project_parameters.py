@@ -34,6 +34,8 @@ class ProjectPrameters():
                                  default=None, help='the number of validation iteration.')
         self.parser.add_argument(
             '--checkpointPath', type=str, default=None, help='the path which store the checkpoint.')
+        self.parser.add_argument('--numWorkers', type=int, default=torch.get_num_threads(
+        ), help='how many subprocesses to use for data loading.')
 
         # feature
         self.parser.add_argument(
