@@ -64,13 +64,13 @@ class MyDataModule(pl.LightningDataModule):
             self.projectParams.dataType = testSet.class_to_idx
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda)
+        return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda, num_workers=projectParams.numWorkers)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(dataset=self.dataset['val'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda)
+        return DataLoader(dataset=self.dataset['val'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda, num_workers=projectParams.numWorkers)
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(dataset=self.dataset['test'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda)
+        return DataLoader(dataset=self.dataset['test'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda, num_workers=projectParams.numWorkers)
 
 
 if __name__ == "__main__":
