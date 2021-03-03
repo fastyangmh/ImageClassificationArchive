@@ -11,16 +11,16 @@ from torch.utils.data import random_split, DataLoader
 
 
 def get_transform_dictionary(projectParams):
-    trainTransform = transforms.Compose([transforms.Resize(size=(projectParams.maxImageSize, projectParams.maxImageSize)),
+    trainTransform = transforms.Compose([transforms.Resize(size=(projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
                                          transforms.ColorJitter(),
                                          transforms.RandomRotation(degrees=90),
                                          transforms.RandomHorizontalFlip(),
                                          transforms.RandomVerticalFlip(),
                                          transforms.ToTensor(),
                                          transforms.RandomErasing()])
-    valTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
+    valTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
                                        transforms.ToTensor()])
-    testTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
+    testTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
                                         transforms.ToTensor()])
     return {'train': trainTransform, 'val': valTransform, 'test': testTransform}
 
