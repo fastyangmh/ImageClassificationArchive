@@ -8,6 +8,7 @@ import torch.nn as nn
 import numpy as np
 import torch.optim as optim
 import pandas as pd
+from src.utils import load_checkpoint
 
 # def
 
@@ -47,6 +48,13 @@ def get_optimizer(model_parameters, projectParams):
             params=model_parameters, lr=projectParams.lr, momentum=projectParams.momentum)
     return optimizer
 
+
+def create_model(projectParams):
+    model = Net(projectParams=projectParams)
+    if projectParams.checkpointPath is not None:
+        model = load_checkpoint(
+            model=model, checkpointPath=projectParams.checkpointPath)
+    return model
 
 # class
 
@@ -143,7 +151,7 @@ if __name__ == '__main__':
     channel = 1 if projectParams.predefinedTask == 'mnist' else 3
 
     # create model
-    model = Net(projectParams=projectParams)
+    model = create_model(projectParams=projectParams)
 
     # create input data
     x = torch.ones(projectParams.batchSize, channel,
