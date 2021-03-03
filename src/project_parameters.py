@@ -3,6 +3,7 @@ import argparse
 from os import listdir
 from os.path import join
 import torch
+from datetime import datetime
 
 # class
 
@@ -54,6 +55,10 @@ class ProjectPrameters():
         self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[
                                  'resnet18', 'wideresnet50', 'resnext50', 'vgg11bn', 'mobilenetv2'], help='the backbone model used for classification.')
 
+        # evaluate
+        self.parser.add_argument(
+            '--kFoldValue', type=int, default=5, help='the value of k-fold validation.')
+
         # debug
         self.parser.add_argument(
             '--maxFiles', type=self.str_to_int, default=None, help='the maximum number of files.')
@@ -97,6 +102,11 @@ class ProjectPrameters():
         projectParams.gpus = -1 if projectParams.useCuda else 0
         if projectParams.valIter is None:
             projectParams.valIter = projectParams.trainIter
+
+        # evaluate
+        if projectParams.mode == 'evaluate':
+            projectParams.kFoldDataPath = './kFoldDataset{}'.format(
+                datetime.now().strftime('%Y%m%d%H%M%S'))
 
         return projectParams
 
