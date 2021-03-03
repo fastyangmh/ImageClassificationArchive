@@ -2,7 +2,8 @@
 import torch
 from src.project_parameters import ProjectPrameters
 from src.model import create_model
-from torchvision import transforms, datasets
+from torchvision import transforms
+from torchvision.datasets import ImageFolder
 from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
@@ -25,8 +26,7 @@ def predict(projectParams):
         with torch.no_grad():
             result.append(model(img).tolist()[0])
     else:
-        dataset = datasets.ImageFolder(
-            projectParams.dataPath, transform=transform)
+        dataset = ImageFolder(projectParams.dataPath, transform=transform)
         dataLoader = DataLoader(dataset, batch_size=projectParams.batchSize,
                                 pin_memory=projectParams.useCuda, num_workers=projectParams.numWorkers)
         with torch.no_grad():
