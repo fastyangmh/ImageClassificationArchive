@@ -57,7 +57,7 @@ class ProjectPrameters():
 
         # model
         self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[
-                                 'resnet18', 'wideresnet50', 'resnext50', 'vgg11bn', 'mobilenetv2'], help='the backbone model used for classification.')
+                                 'resnet18', 'wideresnet50', 'resnext50', 'vgg11bn', 'mobilenetv2', 'ghostnet'], help='the backbone model used for classification.')
 
         # evaluate
         self.parser.add_argument(
