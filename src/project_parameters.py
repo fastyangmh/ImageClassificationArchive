@@ -32,10 +32,14 @@ class ProjectPrameters():
                                  help='whether to use Cuda to train the model. if True which will train the model on CPU. if False which will train on GPU.')
         self.parser.add_argument('--valIter', type=self.str_to_int,
                                  default=None, help='the number of validation iteration.')
+        self.parser.add_argument(
+            '--checkpointPath', type=str, default=None, help='the path which store the checkpoint.')
+        self.parser.add_argument('--numWorkers', type=int, default=torch.get_num_threads(
+        ), help='how many subprocesses to use for data loading.')
 
         # feature
         self.parser.add_argument(
-            '--maxImageSize', type=int, default=224, help='the maximum image size.')
+            '--maxImageSize', type=self.str_to_int_list, default=[224], help='the maximum image size(height, width).')
 
         # train
         self.parser.add_argument(
@@ -73,6 +77,9 @@ class ProjectPrameters():
         else:
             return int(s)
 
+    def str_to_int_list(self, s):
+        return [int(v) for v in s.split(',') if len(v) > 0]
+
     def str_to_str_list(self, s):
         return [str(v) for v in s.split(',') if len(v) > 0]
 
@@ -102,6 +109,13 @@ class ProjectPrameters():
         projectParams.gpus = -1 if projectParams.useCuda else 0
         if projectParams.valIter is None:
             projectParams.valIter = projectParams.trainIter
+
+        # feature
+        if len(projectParams.maxImageSize) == 1:
+            projectParams.maxImageSize = projectParams.maxImageSize*2
+        else:
+            # the PIL image size is (width, height), then the maxImageSize needs to swap.
+            projectParams.maxImageSize.reverse()
 
         # evaluate
         if projectParams.mode == 'evaluate':

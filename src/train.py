@@ -2,7 +2,7 @@
 from src.project_parameters import ProjectPrameters
 import pytorch_lightning as pl
 from src.data_preparation import MyDataModule
-from src.model import Net
+from src.model import create_model
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
 import warnings
 warnings.filterwarnings("ignore")
@@ -28,7 +28,7 @@ def get_trainer(projectParams):
 def train(projectParams):
     pl.seed_everything(seed=projectParams.randomSeed)
     dataset = MyDataModule(projectParams=projectParams)
-    model = Net(projectParams=projectParams)
+    model = create_model(projectParams=projectParams)
     trainer = get_trainer(projectParams=projectParams)
     trainer.fit(model=model, datamodule=dataset)
     result = {'trainer': trainer,

@@ -2,6 +2,7 @@
 from src.evaluate import kFold_validation
 from src.project_parameters import ProjectPrameters
 from src.train import train
+from src.predict import predict
 
 # def
 
@@ -13,6 +14,10 @@ def main(projectParams):
     elif projectParams.mode == 'evaluate':
         kFold_validation(projectParams=projectParams)
         result = 1
+    elif projectParams.mode == 'predict':
+        result = predict(projectParams=projectParams)
+        print(('{},'*projectParams.numClasses).format(*projectParams.dataType.keys()))
+        print(result)
     return result
 
 

@@ -11,16 +11,16 @@ from torch.utils.data import random_split, DataLoader
 
 
 def get_transform_dictionary(projectParams):
-    trainTransform = transforms.Compose([transforms.Resize(size=(projectParams.maxImageSize, projectParams.maxImageSize)),
+    trainTransform = transforms.Compose([transforms.Resize(size=(projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
                                          transforms.ColorJitter(),
                                          transforms.RandomRotation(degrees=90),
                                          transforms.RandomHorizontalFlip(),
                                          transforms.RandomVerticalFlip(),
                                          transforms.ToTensor(),
                                          transforms.RandomErasing()])
-    valTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
+    valTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
                                        transforms.ToTensor()])
-    testTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize, projectParams.maxImageSize)),
+    testTransform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
                                         transforms.ToTensor()])
     return {'train': trainTransform, 'val': valTransform, 'test': testTransform}
 
@@ -64,13 +64,13 @@ class MyDataModule(pl.LightningDataModule):
             self.projectParams.dataType = testSet.class_to_idx
 
     def train_dataloader(self) -> DataLoader:
-        return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda)
+        return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)
 
     def val_dataloader(self) -> DataLoader:
-        return DataLoader(dataset=self.dataset['val'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda)
+        return DataLoader(dataset=self.dataset['val'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)
 
     def test_dataloader(self) -> DataLoader:
-        return DataLoader(dataset=self.dataset['test'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda)
+        return DataLoader(dataset=self.dataset['test'], batch_size=self.projectParams.batchSize, shuffle=False, pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)
 
 
 if __name__ == "__main__":
