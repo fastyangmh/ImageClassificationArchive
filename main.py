@@ -16,7 +16,8 @@ def main(projectParams):
         result = 1
     elif projectParams.mode == 'predict':
         result = predict(projectParams=projectParams)
-        print(('{},'*projectParams.numClasses).format(*projectParams.dataType.keys()))
+        print(('{},'*projectParams.numClasses).format(*
+                                                      projectParams.dataType.keys())[:-1])
         print(result)
     return result
 

@@ -41,5 +41,6 @@ if __name__ == '__main__':
 
     # predict
     result = predict(projectParams=projectParams)
-    print(('{},'*projectParams.numClasses).format(*projectParams.dataType.keys()))
+    print(('{},'*projectParams.numClasses).format(*
+                                                  projectParams.dataType.keys())[:-1])
     print(result)
