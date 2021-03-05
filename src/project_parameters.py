@@ -1,9 +1,9 @@
 # import
 import argparse
-from os import listdir
-from os.path import join
+from os.path import join, basename
 import torch
 from datetime import datetime
+from glob import glob
 
 # class
 
@@ -20,8 +20,6 @@ class ProjectPrameters():
             '--dataPath', type=str, default='data/dogs_vs_cats/', help='the data path.')
         self.parser.add_argument('--predefinedTask', type=str, default=None, choices=[
                                  'mnist', 'cifar10'], help='the predefined task that provided the mnist and cifar10 tasks.')
-        self.parser.add_argument('--dataType', type=self.str_to_str_list, default='none',
-                                 help='the categories of data. if "none" then will automatically get the dataType from the train directory.')
         self.parser.add_argument(
             '--randomSeed', type=self.str_to_int, default=0, help='the random seed.')
         self.parser.add_argument(
@@ -80,9 +78,6 @@ class ProjectPrameters():
     def str_to_int_list(self, s):
         return [int(v) for v in s.split(',') if len(v) > 0]
 
-    def str_to_str_list(self, s):
-        return [str(v) for v in s.split(',') if len(v) > 0]
-
     def parse(self):
         projectParams = self.parser.parse_args()
 
@@ -90,17 +85,13 @@ class ProjectPrameters():
         if projectParams.predefinedTask is not None:
             projectParams.dataPath = join(
                 './data/', projectParams.predefinedTask)
-        if projectParams.dataType == ['none'] and projectParams.predefinedTask is None:
-            # get the dataType from the dataPath
-            try:
-                dirs = listdir(join(projectParams.dataPath, 'train'))
-                projectParams.dataType = {dirname: idx for idx,
-                                          dirname in enumerate(dirs)}
-            except:
-                assert False, 'the dataPath does not exist the data.'
         else:
-            projectParams.dataType = {dType: idx for idx,
-                                      dType in enumerate(projectParams.dataType)}
+            '''
+            get the dataType if predefinedTask is None,
+            if predefinedTask is not None, the dataType will get from the data_preparation.py
+            '''
+            projectParams.dataType = {dType: idx for idx, dType in enumerate(sorted(
+                [basename(dType[:-1]) for dType in glob(join(projectParams.dataPath, 'train/*/'))]))}
         if projectParams.predefinedTask in ['mnist', 'cifar10']:
             projectParams.numClasses = 10
         else:
