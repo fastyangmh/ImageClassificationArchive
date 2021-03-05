@@ -44,6 +44,8 @@ class MyDataModule(pl.LightningDataModule):
                 if self.projectParams.maxFiles is not None:
                     self.dataset[stage] = random_split(dataset=self.dataset[stage], lengths=(
                         self.projectParams.maxFiles, len(self.dataset[stage])-self.projectParams.maxFiles))[0]
+            assert self.dataset['train'].class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
+                self.dataset['train'].class_to_idx, self.projectParams.dataType)
         else:
             taskDict = {'cifar10': 'CIFAR10', 'mnist': 'MNIST'}
             trainSet = eval('{}(root=self.projectParams.dataPath, train=True, download=True, transform=self.transformDict["train"])'.format(
@@ -60,7 +62,7 @@ class MyDataModule(pl.LightningDataModule):
                 dataset=trainSet, lengths=trainValSize)
             self.dataset = {'train': trainSet,
                             'val': valSet, 'test': testSet}
-            # get the dataType from the testSet
+            # get the dataType from the testSet, because the trainSet is subset doesnot exist the class_to_idx attributes.
             self.projectParams.dataType = testSet.class_to_idx
 
     def train_dataloader(self) -> DataLoader:

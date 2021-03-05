@@ -12,8 +12,11 @@ def main(projectParams):
     if projectParams.mode == 'train':
         result = train(projectParams=projectParams)
     elif projectParams.mode == 'evaluate':
-        kFold_validation(projectParams=projectParams)
-        result = 1
+        if projectParams.predefinedTask is None:
+            kFold_validation(projectParams=projectParams)
+            result = 1
+        else:
+            print('Temporarily does not support predefinedTask.')
     elif projectParams.mode == 'predict':
         result = predict(projectParams=projectParams)
         print(('{},'*projectParams.numClasses).format(*
