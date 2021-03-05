@@ -108,4 +108,5 @@ if __name__ == '__main__':
     projectParams = ProjectPrameters().parse()
 
     # k-fold validation
-    kFold_validation(projectParams=projectParams)
+    if projectParams.predefinedTask is None:
+        kFold_validation(projectParams=projectParams)
