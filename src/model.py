@@ -62,6 +62,11 @@ def get_optimizer(model_parameters, projectParams):
     return optimizer
 
 
+def get_criterion(projectParams):
+    criterion = nn.CrossEntropyLoss()
+    return criterion
+
+
 def create_model(projectParams):
     model = Net(projectParams=projectParams)
     if projectParams.checkpointPath is not None:
@@ -77,7 +82,7 @@ class Net(pl.LightningModule):
         super().__init__()
         self.classifier = get_classifier(projectParams=projectParams)
         self.activation = nn.Softmax(dim=-1)
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = get_criterion(projectParams=projectParams)
         self.accuracy = pl.metrics.Accuracy()
         self.confMat = pl.metrics.ConfusionMatrix(
             num_classes=projectParams.numClasses)
