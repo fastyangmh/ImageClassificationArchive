@@ -22,6 +22,7 @@ def get_trainer(projectParams):
                       log_gpu_memory='all',
                       num_sanity_val_steps=0,
                       profiler=projectParams.report,
+                      deterministic=True,
                       weights_summary=projectParams.weightsSummary)
 
 
