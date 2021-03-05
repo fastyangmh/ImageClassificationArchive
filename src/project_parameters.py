@@ -20,6 +20,8 @@ class ProjectPrameters():
             '--dataPath', type=str, default='data/dogs_vs_cats/', help='the data path.')
         self.parser.add_argument('--predefinedTask', type=str, default=None, choices=[
                                  'mnist', 'cifar10'], help='the predefined task that provided the mnist and cifar10 tasks.')
+        self.parser.add_argument('--dataType', type=self.str_to_str_list, default=None,
+                                 help='the categories of data. if the value equals None then will automatically get the dataType from the train directory.')
         self.parser.add_argument(
             '--randomSeed', type=self.str_to_int, default=0, help='the random seed.')
         self.parser.add_argument(
@@ -69,6 +71,9 @@ class ProjectPrameters():
         self.parser.add_argument('--weightsSummary', type=str, default=None, choices=[
                                  'top', 'full'], help='whether to report the weight of the model.')
 
+    def str_to_str_list(self, s):
+        return [str(v) for v in s.split(',') if len(v) > 0]
+
     def str_to_int(self, s):
         if s == 'None' or s == 'none':
             return None
@@ -83,18 +88,18 @@ class ProjectPrameters():
 
         # base
         if projectParams.predefinedTask is not None:
+            # the dataType of predefinedTask will automatically get from data_preparation
             projectParams.dataPath = join(
                 './data/', projectParams.predefinedTask)
-        else:
-            '''
-            get the dataType if predefinedTask is None,
-            if predefinedTask is not None, the dataType will get from the data_preparation.py
-            '''
+            projectParams.numClasses = 10
+        elif projectParams.dataType is None:
             projectParams.dataType = {dType: idx for idx, dType in enumerate(sorted(
                 [basename(dType[:-1]) for dType in glob(join(projectParams.dataPath, 'train/*/'))]))}
-        if projectParams.predefinedTask in ['mnist', 'cifar10']:
-            projectParams.numClasses = 10
+            projectParams.numClasses = len(projectParams.dataType)
+            assert projectParams.numClasses, 'there does not get any dataType.'
         else:
+            projectParams.dataType = {
+                dType: idx for idx, dType in enumerate(sorted(projectParams.dataType))}
             projectParams.numClasses = len(projectParams.dataType)
         projectParams.useCuda = torch.cuda.is_available() and not projectParams.noCuda
         projectParams.gpus = -1 if projectParams.useCuda else 0
