@@ -36,6 +36,8 @@ class ProjectPrameters():
             '--checkpointPath', type=str, default=None, help='the path which store the checkpoint.')
         self.parser.add_argument('--numWorkers', type=int, default=torch.get_num_threads(
         ), help='how many subprocesses to use for data loading.')
+        self.parser.add_argument('--noBalance', action='store_true',
+                                 default=False, help='whether to balance the data.')
 
         # feature
         self.parser.add_argument(
@@ -105,6 +107,14 @@ class ProjectPrameters():
         projectParams.gpus = -1 if projectParams.useCuda else 0
         if projectParams.valIter is None:
             projectParams.valIter = projectParams.trainIter
+        projectParams.useBalance = not projectParams.noBalance
+        if projectParams.useBalance and projectParams.mode == 'train' and projectParams.predefinedTask is None:
+            dataWeight = {}
+            for dType in projectParams.dataType.keys():
+                dataWeight[dType] = len(
+                    glob(join(projectParams.dataPath, 'train/{}/*.png'.format(dType))))
+            projectParams.dataWeight = {
+                dType: 1-(dataWeight[dType]/sum(dataWeight.values())) for dType in dataWeight.keys()}
 
         # feature
         if len(projectParams.maxImageSize) == 1:

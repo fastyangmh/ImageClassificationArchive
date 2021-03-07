@@ -63,7 +63,12 @@ def get_optimizer(model_parameters, projectParams):
 
 
 def get_criterion(projectParams):
-    criterion = nn.CrossEntropyLoss()
+    if 'dataWeight' in projectParams:
+        # in order to prevent error while predict stage or predefinedTask, the condition use it
+        weight = torch.Tensor(list(projectParams.dataWeight.values()))
+    else:
+        weight = None
+    criterion = nn.CrossEntropyLoss(weight=weight)
     return criterion
 
 
