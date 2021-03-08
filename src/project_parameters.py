@@ -47,7 +47,7 @@ class ProjectPrameters():
         self.parser.add_argument(
             '--batchSize', type=int, default=32, help='how many samples per batch to load.')
         self.parser.add_argument('--optimizer', type=str, default='adam', choices=[
-                                 'adam', 'sgd'], help='the optimizer whil training model.')
+                                 'adam', 'sgd'], help='the optimizer while training model.')
         self.parser.add_argument(
             '--lr', type=float, default=1e-3, help='the learning rate.')
         self.parser.add_argument(
@@ -56,6 +56,12 @@ class ProjectPrameters():
             '--momentum', type=float, default=0.1, help='the momentum factor of the SGD optimizer.')
         self.parser.add_argument(
             '--trainIter', type=int, default=100, help='the number of training iteration.')
+        self.parser.add_argument('--lrScheduler', type=str, default='cosine', choices=[
+                                 'cosine', 'step'], help='the lr scheduler while training model.')
+        self.parser.add_argument(
+            '--lrSchedulerStepSize', type=int, default=10, help='period of learning rate decay.')
+        self.parser.add_argument('--lrSchedulerGamma', type=int, default=0.1,
+                                 help='multiplicative factor of learning rate decay.')
 
         # model
         self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[

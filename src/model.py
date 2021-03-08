@@ -1,6 +1,6 @@
 # import
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 import torch
-from torch.optim import optimizer
 from src.project_parameters import ProjectPrameters
 import pytorch_lightning as pl
 from torchvision.models import resnet18, wide_resnet50_2, resnext50_32x4d, vgg11_bn, mobilenet_v2
@@ -60,6 +60,16 @@ def get_optimizer(model_parameters, projectParams):
         optimizer = optim.SGD(
             params=model_parameters, lr=projectParams.lr, momentum=projectParams.momentum)
     return optimizer
+
+
+def get_lr_scheduler(projectParams, optimizer):
+    if projectParams.lrScheduler == 'cosine':
+        lrScheduler = CosineAnnealingLR(
+            optimizer=optimizer, T_max=projectParams.lrSchedulerStepSize)
+    elif projectParams.lrScheduler == 'step':
+        lrScheduler = StepLR(
+            optimizer=optimizer, step_size=projectParams.lrSchedulerStepSize, gamma=projectParams.lrSchedulerGamma)
+    return lrScheduler
 
 
 def get_criterion(projectParams):
@@ -164,7 +174,12 @@ class Net(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = get_optimizer(
             model_parameters=self.parameters(), projectParams=self.projectParams)
-        return optimizer
+        if self.projectParams.lrSchedulerStepSize > 0:
+            lrScheduler = get_lr_scheduler(
+                projectParams=self.projectParams, optimizer=optimizer)
+            return [optimizer], [lrScheduler]
+        else:
+            return optimizer
 
 
 if __name__ == '__main__':
