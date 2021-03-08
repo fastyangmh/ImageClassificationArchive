@@ -62,6 +62,10 @@ class ProjectPrameters():
             '--lrSchedulerStepSize', type=int, default=10, help='period of learning rate decay.')
         self.parser.add_argument('--lrSchedulerGamma', type=int, default=0.1,
                                  help='multiplicative factor of learning rate decay.')
+        self.parser.add_argument('--noEarlyStopping', action='store_true',
+                                 default=False, help='whether to use early stopping while training.')
+        self.parser.add_argument('--earlyStoppingPatience', type=int, default=3,
+                                 help='number of validation checks with no improvement after which training will be stopped.')
 
         # model
         self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[
@@ -128,6 +132,12 @@ class ProjectPrameters():
         else:
             # the PIL image size is (width, height), then the maxImageSize needs to swap.
             projectParams.maxImageSize.reverse()
+
+        # train
+        projectParams.useEarlyStopping = not projectParams.noEarlyStopping
+        if projectParams.useEarlyStopping:
+            #because the PyTorch lightning needs to get validation loss in every training epoch.
+            projectParams.valIter = 1
 
         # evaluate
         if projectParams.mode == 'evaluate':
