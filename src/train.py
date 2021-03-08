@@ -3,7 +3,7 @@ from src.project_parameters import ProjectPrameters
 import pytorch_lightning as pl
 from src.data_preparation import MyDataModule
 from src.model import create_model
-from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor
+from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -13,6 +13,9 @@ warnings.filterwarnings("ignore")
 def get_trainer(projectParams):
     callbacks = [ModelCheckpoint(monitor='validation epoch accuracy'),
                  LearningRateMonitor(logging_interval='epoch')]
+    if projectParams.useEarlyStopping:
+        callbacks.append(EarlyStopping(monitor='validation epoch loss',
+                                       patience=projectParams.earlyStoppingPatience, mode='min'))
     return pl.Trainer(gpus=projectParams.gpus,
                       max_epochs=projectParams.trainIter,
                       amp_backend='native',
