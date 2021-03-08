@@ -44,8 +44,12 @@ class MyDataModule(pl.LightningDataModule):
                 if self.projectParams.maxFiles is not None:
                     self.dataset[stage] = random_split(dataset=self.dataset[stage], lengths=(
                         self.projectParams.maxFiles, len(self.dataset[stage])-self.projectParams.maxFiles))[0]
-            assert self.dataset['train'].class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
-                self.dataset['train'].class_to_idx, self.projectParams.dataType)
+            if projectParams.maxFiles is not None:
+                assert self.dataset['train'].dataset.class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
+                    self.dataset['train'].dataset.class_to_idx, self.projectParams.dataType)
+            else:
+                assert self.dataset['train'].class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
+                    self.dataset['train'].class_to_idx, self.projectParams.dataType)
         else:
             taskDict = {'cifar10': 'CIFAR10', 'mnist': 'MNIST'}
             trainSet = eval('{}(root=self.projectParams.dataPath, train=True, download=True, transform=self.transformDict["train"])'.format(
@@ -62,8 +66,8 @@ class MyDataModule(pl.LightningDataModule):
                 dataset=trainSet, lengths=trainValSize)
             self.dataset = {'train': trainSet,
                             'val': valSet, 'test': testSet}
-            # get the dataType from the testSet, because the trainSet is subset doesnot exist the class_to_idx attributes.
-            self.projectParams.dataType = testSet.class_to_idx
+            # get the dataType from the trainSet
+            self.projectParams.dataType = self.dataset['train'].dataset.class_to_idx
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)
