@@ -44,7 +44,7 @@ class MyDataModule(pl.LightningDataModule):
                 if self.projectParams.maxFiles is not None:
                     self.dataset[stage] = random_split(dataset=self.dataset[stage], lengths=(
                         self.projectParams.maxFiles, len(self.dataset[stage])-self.projectParams.maxFiles))[0]
-            if projectParams.maxFiles is not None:
+            if self.projectParams.maxFiles is not None:
                 assert self.dataset['train'].dataset.class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
                     self.dataset['train'].dataset.class_to_idx, self.projectParams.dataType)
             else:
