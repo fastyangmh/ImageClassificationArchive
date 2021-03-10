@@ -112,8 +112,8 @@ class ProjectPrameters():
         projectParams.dataPath = abspath(projectParams.dataPath)
         if projectParams.predefinedTask is not None:
             # the dataType of predefinedTask will automatically get from data_preparation
-            projectParams.dataPath = join(
-                './data/', projectParams.predefinedTask)
+            projectParams.dataPath = abspath(join(
+                './data/', projectParams.predefinedTask))
             projectParams.numClasses = 10
         elif projectParams.dataType is None:
             projectParams.dataType = {dType: idx for idx, dType in enumerate(sorted(
