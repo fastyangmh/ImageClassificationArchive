@@ -5,6 +5,8 @@ from ray.tune.schedulers import ASHAScheduler
 from ray.tune import CLIReporter
 from src.train import train
 from functools import partial
+from copy import copy
+import numpy as np
 
 # def
 
@@ -21,6 +23,7 @@ def get_hyperparameter_space(projectParams):
         'lrScheduler': tune.choice(['cosine', 'step'])
     }
     if projectParams.useEarlyStopping:
+        # the random integer between low and high
         hparamsSpace['earlyStoppingPatience'] = tune.randint(lower=1, upper=10)
     return hparamsSpace
 
@@ -41,6 +44,8 @@ def set_projectParams(hparamsSpace, projectParams):
             exec('projectParams.{}="{}"'.format(key, value))
         else:
             exec('projectParams.{}={}'.format(key, value))
+        if key == 'trainIter' and not projectParams.useEarlyStopping:
+            exec('projectParams.valIter={}'.format(value))
     return projectParams
 
 
@@ -50,8 +55,9 @@ def tuning_function(hparamsSpace, projectParams):
             [value for value in hparamsSpace.values() if type(value) is not str])
         tune.report(diffAccuracy=sumOfHparams)
     else:
+        # use the copy API to prevent the object was modified
         projectParams = set_projectParams(
-            hparamsSpace=hparamsSpace, projectParams=projectParams)
+            hparamsSpace=hparamsSpace, projectParams=copy(projectParams))
         result = train(projectParams=projectParams)
         lossDict, accuracyDict = parse_result(result=result)
         diffAccuracy = sum([1-value for value in accuracyDict.values()])
@@ -65,7 +71,7 @@ def tuning_function(hparamsSpace, projectParams):
 
 
 def tuning(projectParams):
-    # set the mode to train in the projectParams
+    # set the mode value as train in the projectParams
     projectParams.mode = 'train'
 
     # set hyperparameter space
@@ -104,6 +110,8 @@ def tuning(projectParams):
     print('best trial result: {}'.format(
         bestTrial.last_result['diffAccuracy']))
     print('best trial config: {}'.format(bestTrial.config))
+    print('best trial config command: {}'.format((' --{} {}'*len(bestTrial.config)).format(*
+                                                                                           np.concatenate(list(zip(bestTrial.config.keys(), bestTrial.config.values()))))))
     return result
 
 
