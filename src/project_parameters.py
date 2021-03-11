@@ -129,13 +129,6 @@ class ProjectPrameters():
         if projectParams.valIter is None:
             projectParams.valIter = projectParams.trainIter
         projectParams.useBalance = not projectParams.noBalance
-        if projectParams.useBalance and projectParams.mode == 'train' and projectParams.predefinedTask is None:
-            dataWeight = {}
-            for dType in projectParams.dataType.keys():
-                dataWeight[dType] = len(
-                    glob(join(projectParams.dataPath, 'train/{}/*.png'.format(dType))))
-            projectParams.dataWeight = {
-                dType: 1-(dataWeight[dType]/sum(dataWeight.values())) for dType in dataWeight.keys()}
         if projectParams.mode == 'tune':
             projectParams.numWorkers = projectParams.tuneCPU
 
