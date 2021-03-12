@@ -3,6 +3,7 @@ from src.evaluate import kFold_validation
 from src.project_parameters import ProjectPrameters
 from src.train import train
 from src.predict import predict
+from src.tune import tuning
 
 # def
 
@@ -22,6 +23,8 @@ def main(projectParams):
         print(('{},'*projectParams.numClasses).format(*
                                                       projectParams.dataType.keys())[:-1])
         print(result)
+    elif projectParams.mode == 'tune':
+        result = tuning(projectParams=projectParams)
     return result
 
 

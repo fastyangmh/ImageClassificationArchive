@@ -1,6 +1,6 @@
 # import
 import argparse
-from os.path import join, basename
+from os.path import join, basename, abspath
 import torch
 from datetime import datetime
 from glob import glob
@@ -75,6 +75,14 @@ class ProjectPrameters():
         self.parser.add_argument(
             '--kFoldValue', type=int, default=5, help='the value of k-fold validation.')
 
+        # tune
+        self.parser.add_argument(
+            '--tuneIter', type=int, default=100, help='the number of tuning iteration.')
+        self.parser.add_argument(
+            '--tuneCPU', type=int, default=2, help='CPU resources to allocate per trial.')
+        self.parser.add_argument(
+            '--tuneGPU', type=float, default=None, help='GPU resources to allocate per trial.')
+
         # debug
         self.parser.add_argument(
             '--maxFiles', type=self.str_to_int, default=None, help='the maximum number of files.')
@@ -82,6 +90,8 @@ class ProjectPrameters():
                                  'simple', 'advanced'], help='whether to report the bottleneck.')
         self.parser.add_argument('--weightsSummary', type=str, default=None, choices=[
                                  'top', 'full'], help='whether to report the weight of the model.')
+        self.parser.add_argument('--tuneDebug', action='store_true',
+                                 default=False, help='whether to use debug mode while tuning.')
 
     def str_to_str_list(self, s):
         return [str(v) for v in s.split(',') if len(v) > 0]
@@ -99,10 +109,11 @@ class ProjectPrameters():
         projectParams = self.parser.parse_args()
 
         # base
+        projectParams.dataPath = abspath(projectParams.dataPath)
         if projectParams.predefinedTask is not None:
             # the dataType of predefinedTask will automatically get from data_preparation
-            projectParams.dataPath = join(
-                './data/', projectParams.predefinedTask)
+            projectParams.dataPath = abspath(join(
+                './data/', projectParams.predefinedTask))
             projectParams.numClasses = 10
         elif projectParams.dataType is None:
             projectParams.dataType = {dType: idx for idx, dType in enumerate(sorted(
@@ -118,13 +129,8 @@ class ProjectPrameters():
         if projectParams.valIter is None:
             projectParams.valIter = projectParams.trainIter
         projectParams.useBalance = not projectParams.noBalance
-        if projectParams.useBalance and projectParams.mode == 'train' and projectParams.predefinedTask is None:
-            dataWeight = {}
-            for dType in projectParams.dataType.keys():
-                dataWeight[dType] = len(
-                    glob(join(projectParams.dataPath, 'train/{}/*.png'.format(dType))))
-            projectParams.dataWeight = {
-                dType: 1-(dataWeight[dType]/sum(dataWeight.values())) for dType in dataWeight.keys()}
+        if projectParams.mode == 'tune':
+            projectParams.numWorkers = projectParams.tuneCPU
 
         # feature
         if len(projectParams.maxImageSize) == 1:
@@ -136,13 +142,17 @@ class ProjectPrameters():
         # train
         projectParams.useEarlyStopping = not projectParams.noEarlyStopping
         if projectParams.useEarlyStopping:
-            #because the PyTorch lightning needs to get validation loss in every training epoch.
+            # because the PyTorch lightning needs to get validation loss in every training epoch.
             projectParams.valIter = 1
 
         # evaluate
         if projectParams.mode == 'evaluate':
             projectParams.kFoldDataPath = './kFoldDataset{}'.format(
                 datetime.now().strftime('%Y%m%d%H%M%S'))
+
+        # tune
+        if projectParams.tuneGPU is None:
+            projectParams.tuneGPU = torch.cuda.device_count()/projectParams.tuneCPU
 
         return projectParams
 

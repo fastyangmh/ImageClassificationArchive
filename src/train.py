@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 from src.data_preparation import MyDataModule
 from src.model import create_model
 from pytorch_lightning.callbacks import ModelCheckpoint, LearningRateMonitor, EarlyStopping
+from src.utils import calculate_data_weight
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -31,6 +32,8 @@ def get_trainer(projectParams):
 
 def train(projectParams):
     pl.seed_everything(seed=projectParams.randomSeed)
+    if projectParams.useBalance and projectParams.predefinedTask is None:
+        projectParams = calculate_data_weight(projectParams=projectParams)
     dataset = MyDataModule(projectParams=projectParams)
     model = create_model(projectParams=projectParams)
     trainer = get_trainer(projectParams=projectParams)
