@@ -85,8 +85,7 @@ def get_criterion(projectParams):
 def create_model(projectParams):
     model = Net(projectParams=projectParams)
     if projectParams.checkpointPath is not None:
-        model = load_checkpoint(
-            model=model, checkpointPath=projectParams.checkpointPath)
+        model = load_checkpoint(model=model, projectParams=projectParams)
     return model
 
 # class
