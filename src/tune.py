@@ -110,8 +110,8 @@ def tuning(projectParams):
     print('best trial result: {}'.format(
         bestTrial.last_result['diffAccuracy']))
     print('best trial config: {}'.format(bestTrial.config))
-    print('best trial config command: {}'.format((' --{} {}'*len(bestTrial.config)).format(*
-                                                                                           np.concatenate(list(zip(bestTrial.config.keys(), bestTrial.config.values()))))))
+    print('best trial config command: --numWorkers {}{}'.format(projectParams.numWorkers,
+                                                                (' --{} {}'*len(bestTrial.config)).format(*np.concatenate(list(zip(bestTrial.config.keys(), bestTrial.config.values()))))))
     return result
 
 
