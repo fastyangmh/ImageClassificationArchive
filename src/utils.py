@@ -6,8 +6,9 @@ from os.path import join
 # def
 
 
-def load_checkpoint(model, checkpointPath):
-    checkpoint = torch.load(checkpointPath)
+def load_checkpoint(model, projectParams):
+    checkpoint = torch.load(projectParams.checkpointPath, map_location=torch.device(
+        'cuda' if projectParams.useCuda else 'cpu'))
     if 'criterion.weight' in checkpoint['state_dict']:
         # delete the critreion.weight in the checkpoint, because this key does not work while loading the model.
         del checkpoint['state_dict']['criterion.weight']
