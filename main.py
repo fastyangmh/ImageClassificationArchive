@@ -2,7 +2,7 @@
 from src.evaluate import kFold_validation
 from src.project_parameters import ProjectPrameters
 from src.train import train
-from src.predict import predict
+from src.predict import Predict
 from src.tune import tuning
 
 # def
@@ -19,7 +19,8 @@ def main(projectParams):
         else:
             print('Temporarily does not support predefinedTask.')
     elif projectParams.mode == 'predict':
-        result = predict(projectParams=projectParams)
+        result = Predict(projectParams=projectParams).get_result(
+            dataPath=projectParams.dataPath)
         print(('{},'*projectParams.numClasses).format(*
                                                       projectParams.dataType.keys())[:-1])
         print(result)
