@@ -8,31 +8,31 @@ from torch.utils.data import DataLoader
 import numpy as np
 from PIL import Image
 
-# def
+# class
 
 
-def predict(projectParams):
-    # get model
-    model = create_model(projectParams=projectParams)
-    model.eval()
+class Predict:
+    def __init__(self, projectParams):
+        self.projectParams = projectParams
+        self.model = create_model(projectParams=projectParams).eval()
+        self.transform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
+                                             transforms.ToTensor()])
 
-    # load image and transfrom it
-    result = []
-    transform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
-                                    transforms.ToTensor()])
-    if '.png' in projectParams.dataPath:
-        img = Image.open(projectParams.dataPath).convert('RGB')
-        img = transform(img)[None, :]
-        with torch.no_grad():
-            result.append(model(img).tolist()[0])
-    else:
-        dataset = ImageFolder(projectParams.dataPath, transform=transform)
-        dataLoader = DataLoader(dataset, batch_size=projectParams.batchSize,
-                                pin_memory=projectParams.useCuda, num_workers=projectParams.numWorkers)
-        with torch.no_grad():
-            for img, _ in dataLoader:
-                result.append(model(img).tolist())
-    return np.concatenate(result, 0).round(2)
+    def get_result(self, dataPath):
+        result = []
+        if '.png' in dataPath:
+            img = Image.open(dataPath).convert('RGB')
+            img = self.transform(img)[None, :]
+            with torch.no_grad():
+                result.append(self.model(img).tolist()[0])
+        else:
+            dataset = ImageFolder(dataPath, transform=self.transform)
+            dataLoader = DataLoader(dataset, batch_size=self.projectParams.batchSize,
+                                    pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)
+            with torch.no_grad():
+                for img, _ in dataLoader:
+                    result.append(self.model(img).tolist())
+        return np.concatenate(result, 0).round(2)
 
 
 if __name__ == '__main__':
@@ -40,7 +40,8 @@ if __name__ == '__main__':
     projectParams = ProjectPrameters().parse()
 
     # predict
-    result = predict(projectParams=projectParams)
+    result = Predict(projectParams=projectParams).get_result(
+        dataPath=projectParams.dataPath)
     print(('{},'*projectParams.numClasses).format(*
                                                   projectParams.dataType.keys())[:-1])
     print(result)
