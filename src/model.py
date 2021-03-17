@@ -1,6 +1,6 @@
 # import
+from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
 import torch
-from torch.optim import optimizer
 from src.project_parameters import ProjectPrameters
 import pytorch_lightning as pl
 from torchvision.models import resnet18, wide_resnet50_2, resnext50_32x4d, vgg11_bn, mobilenet_v2
@@ -14,17 +14,27 @@ from src.utils import load_checkpoint
 
 
 def get_classifier(projectParams):
-    modelDict = {'resnet18': 'resnet18', 'wideresnet50': 'wide_resnet50_2',
-                 'resnext50': 'resnext50_32x4d', 'vgg11bn': 'vgg11_bn', 'mobilenetv2': 'mobilenet_v2'}
-    classifier = eval('{}(pretrained=True, progress=False)'.format(
-        modelDict[projectParams.backboneModel]))
+    officialModelDict = {'resnet18': 'resnet18', 'wideresnet50': 'wide_resnet50_2',
+                         'resnext50': 'resnext50_32x4d', 'vgg11bn': 'vgg11_bn', 'mobilenetv2': 'mobilenet_v2'}
+    pytorchHub = {'ghostnet': ['huawei-noah/ghostnet', 'ghostnet_1x']}
+    if projectParams.backboneModel in officialModelDict:
+        classifier = eval('{}(pretrained=True, progress=False)'.format(
+            officialModelDict[projectParams.backboneModel]))
+    else:
+        repo, model = pytorchHub[projectParams.backboneModel]
+        classifier = torch.hub.load(repo, model, pretrained=True)
+
     # change the number of output feature
     if projectParams.backboneModel in ['vgg11bn', 'mobilenetv2']:
         classifier.classifier[-1] = nn.Linear(
             in_features=classifier.classifier[-1].in_features, out_features=projectParams.numClasses)
+    elif projectParams.backboneModel in ['ghostnet']:
+        classifier.classifier = nn.Linear(
+            in_features=classifier.classifier.in_features, out_features=projectParams.numClasses)
     else:
         classifier.fc = nn.Linear(
             in_features=classifier.fc.in_features, out_features=projectParams.numClasses)
+
     # change the number of input channels
     if projectParams.predefinedTask == 'mnist':
         if projectParams.backboneModel == 'vgg11bn':
@@ -33,6 +43,9 @@ def get_classifier(projectParams):
         elif projectParams.backboneModel == 'mobilenetv2':
             classifier.features[0][0] = nn.Conv2d(
                 in_channels=1, out_channels=32, kernel_size=3, stride=2, padding=1, bias=False)
+        elif projectParams.backboneModel == 'ghostnet':
+            classifier.conv_stem = nn.Conv2d(
+                in_channels=1, out_channels=16, kernel_size=3, stride=2, padding=1, bias=False)
         else:
             classifier.conv1 = nn.Conv2d(
                 in_channels=1, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
@@ -49,11 +62,30 @@ def get_optimizer(model_parameters, projectParams):
     return optimizer
 
 
+def get_lr_scheduler(projectParams, optimizer):
+    if projectParams.lrScheduler == 'cosine':
+        lrScheduler = CosineAnnealingLR(
+            optimizer=optimizer, T_max=projectParams.lrSchedulerStepSize)
+    elif projectParams.lrScheduler == 'step':
+        lrScheduler = StepLR(
+            optimizer=optimizer, step_size=projectParams.lrSchedulerStepSize, gamma=projectParams.lrSchedulerGamma)
+    return lrScheduler
+
+
+def get_criterion(projectParams):
+    if 'dataWeight' in projectParams:
+        # in order to prevent error while predict stage or predefinedTask, the condition use it
+        weight = torch.Tensor(list(projectParams.dataWeight.values()))
+    else:
+        weight = None
+    criterion = nn.CrossEntropyLoss(weight=weight)
+    return criterion
+
+
 def create_model(projectParams):
     model = Net(projectParams=projectParams)
     if projectParams.checkpointPath is not None:
-        model = load_checkpoint(
-            model=model, checkpointPath=projectParams.checkpointPath)
+        model = load_checkpoint(model=model, projectParams=projectParams)
     return model
 
 # class
@@ -64,7 +96,7 @@ class Net(pl.LightningModule):
         super().__init__()
         self.classifier = get_classifier(projectParams=projectParams)
         self.activation = nn.Softmax(dim=-1)
-        self.criterion = nn.CrossEntropyLoss()
+        self.criterion = get_criterion(projectParams=projectParams)
         self.accuracy = pl.metrics.Accuracy()
         self.confMat = pl.metrics.ConfusionMatrix(
             num_classes=projectParams.numClasses)
@@ -141,7 +173,12 @@ class Net(pl.LightningModule):
     def configure_optimizers(self):
         optimizer = get_optimizer(
             model_parameters=self.parameters(), projectParams=self.projectParams)
-        return optimizer
+        if self.projectParams.lrSchedulerStepSize > 0:
+            lrScheduler = get_lr_scheduler(
+                projectParams=self.projectParams, optimizer=optimizer)
+            return [optimizer], [lrScheduler]
+        else:
+            return optimizer
 
 
 if __name__ == '__main__':
@@ -155,7 +192,7 @@ if __name__ == '__main__':
 
     # create input data
     x = torch.ones(projectParams.batchSize, channel,
-                   projectParams.maxImageSize, projectParams.maxImageSize)
+                   projectParams.maxImageSize[0], projectParams.maxImageSize[1])
 
     # get model output
     y = model(x)
