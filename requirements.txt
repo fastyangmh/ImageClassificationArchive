@@ -1,3 +1,7 @@
+torch
+sklearn
+tqdm
 pytorch-lightning
-ray
-protobuf
+torchvision
+pandas
+ray[tune]
