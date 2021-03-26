@@ -7,6 +7,7 @@ from src.train import train
 from functools import partial
 from copy import copy
 import numpy as np
+from os.path import join
 
 # def
 
@@ -55,7 +56,7 @@ def tuning_function(hparamsSpace, projectParams):
             [value for value in hparamsSpace.values() if type(value) is not str])
         tune.report(diffAccuracy=sumOfHparams)
     else:
-        # use the copy API to prevent the object was modified
+        # use the copy API to prevent the passed in projectParams object was modified
         projectParams = set_projectParams(
             hparamsSpace=hparamsSpace, projectParams=copy(projectParams))
         result = train(projectParams=projectParams)
@@ -78,7 +79,7 @@ def tuning(projectParams):
     hparamsSpace = get_hyperparameter_space(projectParams=projectParams)
 
     # set tune scheduler
-    scheduler = ASHAScheduler(metric='diffAccuracy', mode='min')
+    tuneScheduler = ASHAScheduler(metric='diffAccuracy', mode='min')
 
     # set tune reporter
     reporter = CLIReporter(metric_columns=[
@@ -91,8 +92,9 @@ def tuning(projectParams):
                                 'cpu': projectParams.tuneCPU, 'gpu': projectParams.tuneGPU},
                             config=hparamsSpace,
                             num_samples=projectParams.tuneIter,
-                            scheduler=scheduler,
-                            local_dir='./save/tuning_logs',
+                            scheduler=tuneScheduler,
+                            local_dir=join(
+                                projectParams.savePath, 'tuning_logs'),
                             progress_reporter=reporter)
 
     # get the best trial
