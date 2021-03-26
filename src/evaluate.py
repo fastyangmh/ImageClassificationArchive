@@ -31,7 +31,7 @@ def copyFile2Dst(files, dst, projectParams):
                 copy2(src=file, dst=join(dst, dType))
 
 
-def get_kFold_dataset(projectParams, dataset):
+def create_kFold_dataset(projectParams, dataset):
     sKF = StratifiedKFold(n_splits=projectParams.kFoldValue, shuffle=True)
     for idx, (trainIndex, valIndex) in tqdm(enumerate(sKF.split(X=dataset['data'], y=dataset['label'])), total=projectParams.kFoldValue):
         xTrain = dataset['data'][trainIndex]
@@ -78,8 +78,8 @@ def kFold_validation(projectParams):
     # load files to dataset
     dataset = dataPath2Dataset(projectParams=projectParams)
 
-    # get split index and copy file to destination
-    get_kFold_dataset(projectParams=projectParams, dataset=dataset)
+    # create split index and copy file to destination
+    create_kFold_dataset(projectParams=projectParams, dataset=dataset)
 
     # train the model by the kFoldDataPath
     results = get_kFold_result(projectParams=projectParams)
@@ -110,3 +110,5 @@ if __name__ == '__main__':
     # k-fold validation
     if projectParams.predefinedTask is None:
         kFold_validation(projectParams=projectParams)
+    else:
+        print('Temporarily does not support predefined tasks.')
