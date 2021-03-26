@@ -33,6 +33,7 @@ class MyDataModule(pl.LightningDataModule):
         self.projectParams = projectParams
         self.transformDict = get_transform_dictionary(
             projectParams=projectParams)
+        self.taskDict = {'cifar10': 'CIFAR10', 'mnist': 'MNIST'}
 
     def prepare_data(self):
         if self.projectParams.predefinedTask is None:
@@ -51,11 +52,10 @@ class MyDataModule(pl.LightningDataModule):
                 assert self.dataset['train'].class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
                     self.dataset['train'].class_to_idx, self.projectParams.dataType)
         else:
-            taskDict = {'cifar10': 'CIFAR10', 'mnist': 'MNIST'}
             trainSet = eval('{}(root=self.projectParams.dataPath, train=True, download=True, transform=self.transformDict["train"])'.format(
-                taskDict[self.projectParams.predefinedTask]))
+                self.taskDict[self.projectParams.predefinedTask]))
             testSet = eval('{}(root=self.projectParams.dataPath, train=False, download=True, transform=self.transformDict["test"])'.format(
-                taskDict[self.projectParams.predefinedTask]))
+                self.taskDict[self.projectParams.predefinedTask]))
             # modify the maximum number of files
             for dSet in [trainSet, testSet]:
                 dSet.data = dSet.data[:self.projectParams.maxFiles]

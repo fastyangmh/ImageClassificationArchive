@@ -15,9 +15,8 @@ def main(projectParams):
     elif projectParams.mode == 'evaluate':
         if projectParams.predefinedTask is None:
             kFold_validation(projectParams=projectParams)
-            result = 1
         else:
-            print('Temporarily does not support predefinedTask.')
+            print('Temporarily does not support predefined tasks.')
     elif projectParams.mode == 'predict':
         result = Predict(projectParams=projectParams).get_result(
             dataPath=projectParams.dataPath)

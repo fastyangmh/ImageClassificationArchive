@@ -42,6 +42,7 @@ if __name__ == '__main__':
     # predict
     result = Predict(projectParams=projectParams).get_result(
         dataPath=projectParams.dataPath)
+    # use [:-1] to remove the latest comma
     print(('{},'*projectParams.numClasses).format(*
                                                   projectParams.dataType.keys())[:-1])
     print(result)

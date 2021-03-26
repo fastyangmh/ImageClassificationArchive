@@ -31,7 +31,7 @@ def get_classifier(projectParams):
     elif projectParams.backboneModel in ['ghostnet']:
         classifier.classifier = nn.Linear(
             in_features=classifier.classifier.in_features, out_features=projectParams.numClasses)
-    else:
+    elif projectParams.backboneModel in ['resnet18', 'wideresnet50', 'resnext50']:
         classifier.fc = nn.Linear(
             in_features=classifier.fc.in_features, out_features=projectParams.numClasses)
 
@@ -46,7 +46,7 @@ def get_classifier(projectParams):
         elif projectParams.backboneModel == 'ghostnet':
             classifier.conv_stem = nn.Conv2d(
                 in_channels=1, out_channels=16, kernel_size=3, stride=2, padding=1, bias=False)
-        else:
+        elif projectParams.backboneModel in ['resnet18', 'wideresnet50', 'resnext50']:
             classifier.conv1 = nn.Conv2d(
                 in_channels=1, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
     return classifier
@@ -106,7 +106,7 @@ class Net(pl.LightningModule):
         return self.activation(self.classifier(x))
 
     def get_progress_bar_dict(self):
-        # don't show the version number
+        # don't show the loss value
         items = super().get_progress_bar_dict()
         items.pop('loss', None)
         return items
