@@ -19,7 +19,6 @@ def get_trainer(projectParams):
                                        patience=projectParams.earlyStoppingPatience, mode='min'))
     return pl.Trainer(gpus=projectParams.gpus,
                       max_epochs=projectParams.trainIter,
-                      amp_backend='native',
                       check_val_every_n_epoch=projectParams.valIter,
                       default_root_dir=projectParams.savePath,
                       callbacks=callbacks,
