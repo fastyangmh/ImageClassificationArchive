@@ -82,6 +82,8 @@ class ProjectPrameters():
             '--tuneCPU', type=int, default=2, help='CPU resources to allocate per trial.')
         self.parser.add_argument(
             '--tuneGPU', type=float, default=None, help='GPU resources to allocate per trial.')
+        self.parser.add_argument('--parameterSpacePath', type=str, default=None,
+                                 help='the self-defined parameter space path. if given will use self-defined parameter space to hyperparameter tuning. if not given will use default parameter space to hyperparameter tuning.')
 
         # debug
         self.parser.add_argument(

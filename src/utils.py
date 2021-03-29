@@ -2,6 +2,7 @@
 import torch
 from glob import glob
 from os.path import join
+from ruamel.yaml import safe_load
 
 # def
 
@@ -27,3 +28,9 @@ def calculate_data_weight(projectParams):
     projectParams.dataWeight = {
         dType: 1-(dataWeight[dType]/sum(dataWeight.values())) for dType in dataWeight.keys()}
     return projectParams
+
+
+def load_yaml(filePath):
+    with open(filePath, 'r') as f:
+        config = safe_load(f)
+    return config
