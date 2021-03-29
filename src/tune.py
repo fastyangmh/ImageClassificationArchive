@@ -8,24 +8,46 @@ from functools import partial
 from copy import copy
 import numpy as np
 from os.path import join
+from src.utils import load_yaml
 
 # def
 
 
+def config_to_hparamsSpace(config):
+    hparamsSpace = {}
+    for keyType in config.keys():
+        for parameter, value in config[keyType].items():
+            if keyType == 'int':
+                hparamsSpace[parameter] = tune.randint(
+                    lower=min(value), upper=max(value))
+            elif keyType == 'float':
+                hparamsSpace[parameter] = tune.uniform(
+                    lower=min(value), upper=max(value))
+            elif keyType == 'choice':
+                hparamsSpace[parameter] = tune.choice(value)
+    return hparamsSpace
+
+
 def get_hyperparameter_space(projectParams):
-    hparamsSpace = {
-        # the random integer between low and high
-        'trainIter': tune.randint(lower=10, upper=200),
-        'lrSchedulerStepSize': tune.randint(lower=1, upper=10),
-        # the random floating-point number between low and high
-        'lr': tune.uniform(lower=1e-4, upper=1e-1),
-        # the stochastic choices the one element from the given list
-        'optimizer': tune.choice(['adam', 'sgd']),
-        'lrScheduler': tune.choice(['cosine', 'step'])
-    }
+    if projectParams.parameterSpacePath is not None:
+        config = load_yaml(filePath=projectParams.parameterSpacePath)
+        assert config is not None, 'the self-defined parameter space has not any content.'
+        hparamsSpace = config_to_hparamsSpace(config=config)
+    else:
+        hparamsSpace = {
+            # the random integer between low and high
+            'trainIter': tune.randint(lower=10, upper=200),
+            'lrSchedulerStepSize': tune.randint(lower=1, upper=10),
+            # the random floating-point number between low and high
+            'lr': tune.uniform(lower=1e-4, upper=1e-1),
+            # the stochastic choices the one element from the given list
+            'optimizer': tune.choice(['adam', 'sgd']),
+            'lrScheduler': tune.choice(['cosine', 'step'])
+        }
     if projectParams.useEarlyStopping:
         # the random integer between low and high
-        hparamsSpace['earlyStoppingPatience'] = tune.randint(lower=1, upper=10)
+        hparamsSpace['earlyStoppingPatience'] = tune.randint(
+            lower=1, upper=10)
     return hparamsSpace
 
 
