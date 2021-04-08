@@ -46,11 +46,11 @@ class MyDataModule(pl.LightningDataModule):
                     self.dataset[stage] = random_split(dataset=self.dataset[stage], lengths=(
                         self.projectParams.maxFiles, len(self.dataset[stage])-self.projectParams.maxFiles))[0]
             if self.projectParams.maxFiles is not None:
-                assert self.dataset['train'].dataset.class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
-                    self.dataset['train'].dataset.class_to_idx, self.projectParams.dataType)
+                assert self.dataset['train'].dataset.class_to_idx == self.projectParams.classes, 'the classes is not the same. ImageFolder: {} classes: {}'.format(
+                    self.dataset['train'].dataset.class_to_idx, self.projectParams.classes)
             else:
-                assert self.dataset['train'].class_to_idx == self.projectParams.dataType, 'the dataType is not the same. ImageFolder: {} dataType: {}'.format(
-                    self.dataset['train'].class_to_idx, self.projectParams.dataType)
+                assert self.dataset['train'].class_to_idx == self.projectParams.classes, 'the classes is not the same. ImageFolder: {} classes: {}'.format(
+                    self.dataset['train'].class_to_idx, self.projectParams.classes)
         else:
             trainSet = eval('{}(root=self.projectParams.dataPath, train=True, download=True, transform=self.transformDict["train"])'.format(
                 self.taskDict[self.projectParams.predefinedTask]))
@@ -66,8 +66,8 @@ class MyDataModule(pl.LightningDataModule):
                 dataset=trainSet, lengths=trainValSize)
             self.dataset = {'train': trainSet,
                             'val': valSet, 'test': testSet}
-            # get the dataType from the trainSet
-            self.projectParams.dataType = self.dataset['train'].dataset.class_to_idx
+            # get the classes from the trainSet
+            self.projectParams.classes = self.dataset['train'].dataset.class_to_idx
 
     def train_dataloader(self) -> DataLoader:
         return DataLoader(dataset=self.dataset['train'], batch_size=self.projectParams.batchSize, shuffle=True, pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)

@@ -20,8 +20,8 @@ class ProjectPrameters():
             '--dataPath', type=str, default='data/dogs_vs_cats/', help='the data path.')
         self.parser.add_argument('--predefinedTask', type=str, default=None, choices=[
                                  'mnist', 'cifar10'], help='the predefined task that provided the mnist and cifar10 tasks.')
-        self.parser.add_argument('--dataType', type=self.str_to_str_list, default=None,
-                                 help='the categories of data. if the value equals None then will automatically get the dataType from the train directory.')
+        self.parser.add_argument('--classes', type=self.str_to_str_list, default=None,
+                                 help='the classes of data. if the value equals None will automatically get the classes of data from the train directory of dataPath.')
         self.parser.add_argument(
             '--randomSeed', type=self.str_to_int, default=0, help='the random seed.')
         self.parser.add_argument(
@@ -113,19 +113,19 @@ class ProjectPrameters():
         # base
         projectParams.dataPath = abspath(projectParams.dataPath)
         if projectParams.predefinedTask is not None:
-            # the dataType of predefinedTask will automatically get from data_preparation
+            # the classes of predefinedTask will automatically get from data_preparation
             projectParams.dataPath = abspath(join(
                 './data/', projectParams.predefinedTask))
             projectParams.numClasses = 10
-        elif projectParams.dataType is None:
-            projectParams.dataType = {dType: idx for idx, dType in enumerate(sorted(
-                [basename(dType[:-1]) for dType in glob(join(projectParams.dataPath, 'train/*/'))]))}
-            projectParams.numClasses = len(projectParams.dataType)
-            assert projectParams.numClasses, 'there does not get any dataType.'
+        elif projectParams.classes is None:
+            projectParams.classes = {c: idx for idx, c in enumerate(sorted(
+                [basename(c[:-1]) for c in glob(join(projectParams.dataPath, 'train/*/'))]))}
+            projectParams.numClasses = len(projectParams.classes)
+            assert projectParams.numClasses, 'there does not get any classes.'
         else:
-            projectParams.dataType = {
-                dType: idx for idx, dType in enumerate(sorted(projectParams.dataType))}
-            projectParams.numClasses = len(projectParams.dataType)
+            projectParams.classes = {
+                c: idx for idx, c in enumerate(sorted(projectParams.classes))}
+            projectParams.numClasses = len(projectParams.classes)
         projectParams.useCuda = torch.cuda.is_available() and not projectParams.noCuda
         projectParams.gpus = -1 if projectParams.useCuda else 0
         if projectParams.valIter is None:
