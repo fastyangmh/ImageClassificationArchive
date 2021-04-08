@@ -15,20 +15,20 @@ from src.train import train
 def dataPath2Dataset(projectParams):
     data, label = [], []
     for stage in ['train', 'val']:
-        for dType in projectParams.dataType.keys():
+        for c in projectParams.classes.keys():
             temp = sorted(
-                glob(join(projectParams.dataPath, '{}/{}/*.png'.format(stage, dType))))
+                glob(join(projectParams.dataPath, '{}/{}/*.png'.format(stage, c))))
             data += temp
-            label += [projectParams.dataType[dType]]*len(temp)
+            label += [projectParams.classes[c]]*len(temp)
     return {'data': np.array(data), 'label': np.array(label)}
 
 
 def copyFile2Dst(files, dst, projectParams):
-    for dType in projectParams.dataType.keys():
-        makedirs(join(dst, dType), exist_ok=True)
+    for c in projectParams.classes.keys():
+        makedirs(join(dst, c), exist_ok=True)
         for file in files:
-            if dType in file:
-                copy2(src=file, dst=join(dst, dType))
+            if c in file:
+                copy2(src=file, dst=join(dst, c))
 
 
 def create_kFold_dataset(projectParams, dataset):

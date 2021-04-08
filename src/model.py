@@ -166,8 +166,8 @@ class Net(pl.LightningModule):
         self.log('test epoch accuracy', np.mean(epochAcc))
         yPred = torch.cat(yPred, 0)
         yTrue = torch.cat(yTrue, 0)
-        confMat = pd.DataFrame(self.confMat(yPred, yTrue).tolist(), columns=self.projectParams.dataType.keys(
-        ), index=self.projectParams.dataType.keys()).astype(int)
+        confMat = pd.DataFrame(self.confMat(yPred, yTrue).tolist(), columns=self.projectParams.classes.keys(
+        ), index=self.projectParams.classes.keys()).astype(int)
         print(confMat)
 
     def configure_optimizers(self):

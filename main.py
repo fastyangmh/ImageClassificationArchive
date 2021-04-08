@@ -21,7 +21,7 @@ def main(projectParams):
         result = Predict(projectParams=projectParams).get_result(
             dataPath=projectParams.dataPath)
         print(('{},'*projectParams.numClasses).format(*
-                                                      projectParams.dataType.keys())[:-1])
+                                                      projectParams.classes.keys())[:-1])
         print(result)
     elif projectParams.mode == 'tune':
         result = tuning(projectParams=projectParams)
