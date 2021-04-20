@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore")
 
 
 def get_trainer(projectParams):
-    callbacks = [ModelCheckpoint(monitor='validation epoch accuracy'),
+    callbacks = [ModelCheckpoint(monitor='validation epoch accuracy', mode='max'),
                  LearningRateMonitor(logging_interval='epoch')]
     if projectParams.useEarlyStopping:
         callbacks.append(EarlyStopping(monitor='validation epoch loss',
