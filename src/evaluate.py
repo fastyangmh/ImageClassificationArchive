@@ -16,8 +16,11 @@ def dataPath2Dataset(projectParams):
     data, label = [], []
     for stage in ['train', 'val']:
         for c in projectParams.classes.keys():
-            temp = sorted(
-                glob(join(projectParams.dataPath, '{}/{}/*.png'.format(stage, c))))
+            temp = []
+            for ext in ['png', 'jpg']:
+                temp += glob(join(projectParams.dataPath,
+                                  '{}/{}/*.{}'.format(stage, c, ext)))
+            temp = sorted(temp)
             data += temp
             label += [projectParams.classes[c]]*len(temp)
     return {'data': np.array(data), 'label': np.array(label)}

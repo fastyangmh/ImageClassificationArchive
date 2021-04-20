@@ -23,8 +23,11 @@ def load_checkpoint(model, projectParams):
 def calculate_data_weight(projectParams):
     dataWeight = {}
     for c in projectParams.classes.keys():
-        dataWeight[c] = len(
-            glob(join(projectParams.dataPath, 'train/{}/*.png'.format(c))))
+        files = []
+        for ext in ['png', 'jpg']:
+            files += glob(join(projectParams.dataPath,
+                               'train/{}/*.{}'.format(c, ext)))
+        dataWeight[c] = len(files)
     projectParams.dataWeight = {
         c: 1-(dataWeight[c]/sum(dataWeight.values())) for c in dataWeight.keys()}
     return projectParams

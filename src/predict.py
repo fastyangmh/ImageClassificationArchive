@@ -20,7 +20,7 @@ class Predict:
 
     def get_result(self, dataPath):
         result = []
-        if '.png' in dataPath:
+        if '.png' in dataPath or '.jpg' in dataPath:
             img = Image.open(dataPath).convert('RGB')
             img = self.transform(img)[None, :]
             with torch.no_grad():
