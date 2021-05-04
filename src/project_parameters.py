@@ -126,6 +126,12 @@ class ProjectParameters:
                 c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
             project_parameters.num_classes = len(project_parameters.classes)
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
+        project_parameters.transform_config_path = abspath(
+            project_parameters.transform_config_path)
+
+        # model
+        project_parameters.optimizer_config_path = abspath(
+            project_parameters.optimizer_config_path)
 
         # train
         if project_parameters.val_iter is None:
@@ -145,6 +151,8 @@ class ProjectParameters:
             project_parameters.tune_gpu = torch.cuda.device_count()/project_parameters.tune_cpu
         if project_parameters.mode == 'tune':
             project_parameters.num_workers = project_parameters.tune_cpu
+        project_parameters.hyperparameter_config_path = abspath(
+            project_parameters.hyperparameter_config_path)
 
         return project_parameters
 

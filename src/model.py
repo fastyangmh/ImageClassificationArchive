@@ -202,6 +202,9 @@ if __name__ == '__main__':
     # create model
     model = create_model(project_parameters=project_parameters)
 
+    # display model information
+    model.summarize()
+
     # create input data
     x = torch.ones(project_parameters.batch_size,
                    project_parameters.in_chans, 224, 224)
