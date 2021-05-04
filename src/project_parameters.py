@@ -1,168 +1,158 @@
 # import
 import argparse
-from os.path import join, basename, abspath
+from os.path import abspath, join
+from timm import list_models
 import torch
 from datetime import datetime
-from glob import glob
 
 # class
 
 
-class ProjectPrameters():
+class ProjectParameters:
     def __init__(self) -> None:
-        self.parser = argparse.ArgumentParser(
+        self._parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
         # base
-        self.parser.add_argument('--mode', type=str, default='train', choices=['train', 'predict', 'tune', 'evaluate'],
-                                 help='if the mode equals train, will train the model. if the mode equals predict, will use the pre-trained model to predict. if the mode equals tune, will hyperparameter tuning the model. if the mode equals evaluate, will evaluate the model by the k-fold validation.')
-        self.parser.add_argument(
-            '--dataPath', type=str, default='data/dogs_vs_cats/', help='the data path.')
-        self.parser.add_argument('--predefinedTask', type=str, default=None, choices=[
-                                 'mnist', 'cifar10'], help='the predefined task that provided the mnist and cifar10 tasks.')
-        self.parser.add_argument('--classes', type=self.str_to_str_list, default=None,
-                                 help='the classes of data. if the value equals None will automatically get the classes of data from the train directory of dataPath.')
-        self.parser.add_argument(
-            '--randomSeed', type=self.str_to_int, default=0, help='the random seed.')
-        self.parser.add_argument(
-            '--savePath', type=str, default='save/', help='the path which store the models, optimizers, epoch, loss.')
-        self.parser.add_argument('--valSize', type=float, default=0.1,
-                                 help='the validation data size used for the predefined task.')
-        self.parser.add_argument('--noCuda', action='store_true', default=False,
-                                 help='whether to use Cuda to train the model. if True which will train the model on CPU. if False which will train on GPU.')
-        self.parser.add_argument('--valIter', type=self.str_to_int,
-                                 default=None, help='the number of validation iteration.')
-        self.parser.add_argument(
-            '--checkpointPath', type=str, default=None, help='the path which store the checkpoint.')
-        self.parser.add_argument('--numWorkers', type=int, default=torch.get_num_threads(
-        ), help='how many subprocesses to use for data loading.')
-        self.parser.add_argument('--noBalance', action='store_true',
-                                 default=False, help='whether to balance the data.')
+        self._parser.add_argument('--mode', type=str, choices=['train', 'predict', 'tune', 'evaluate'], required=True,
+                                  help='if the mode equals train, will train the model. if the mode equals predict, will use the pre-trained model to predict. if the mode equals tune, will hyperparameter tuning the model. if the mode equals evaluate, will evaluate the model by the k-fold validation.')
+        self._parser.add_argument(
+            '--data_path', type=str, required=True, help='the data path.')
+        self._parser.add_argument('--predefined_dataset', type=str, default=None, choices=[
+            'MNIST', 'CIFAR10'], help='the predefined dataset that provided the MNIST and CIFAR10 tasks.')
+        self._parser.add_argument(
+            '--random_seed', type=self._str_to_int, default=0, help='the random seed.')
+        self._parser.add_argument(
+            '--save_path', type=str, default='save/', help='the path which stores the checkpoint of PyTorch lightning.')
+        self._parser.add_argument('--no_cuda', action='store_true', default=False,
+                                  help='whether to use Cuda to train the model. if True which will train the model on CPU. if False which will train on GPU.')
+        self._parser.add_argument('--gpus', type=self._str_to_int_list, default=-1,
+                                  help='number of GPUs to train on (int) or which GPUs to train on (list or str) applied per node. if give -1 will use all available GPUs.')
 
-        # feature
-        self.parser.add_argument(
-            '--maxImageSize', type=self.str_to_int_list, default=[224], help='the maximum image size(height, width).')
+        # data preparation
+        self._parser.add_argument(
+            '--batch_size', type=int, default=32, help='how many samples per batch to load.')
+        self._parser.add_argument('--classes', type=self._str_to_str_list, required=True,
+                                  help='the classes of data. if use a predefined dataset, please set value as None.')
+        self._parser.add_argument('--val_size', type=float, default=0.1,
+                                  help='the validation data size used for the predefined dataset.')
+        self._parser.add_argument('--num_workers', type=int, default=torch.get_num_threads(
+        ), help='how many subprocesses to use for data loading.')
+        self._parser.add_argument(
+            '--no_balance', action='store_true', default=False, help='whether to balance the data.')
+        self._parser.add_argument('--transform_config_path', type=str,
+                                  default='config/transform.yaml', help='the transform config path.')
 
         # train
-        self.parser.add_argument(
-            '--batchSize', type=int, default=32, help='how many samples per batch to load.')
-        self.parser.add_argument('--optimizer', type=str, default='adam', choices=[
-                                 'adam', 'sgd'], help='the optimizer while training model.')
-        self.parser.add_argument(
+        self._parser.add_argument('--val_iter', type=self._str_to_int,
+                                  default=None, help='the number of validation iteration.')
+        self._parser.add_argument(
             '--lr', type=float, default=1e-3, help='the learning rate.')
-        self.parser.add_argument(
-            '--weightDecay', type=float, default=0., help='the weight decay of optimizer (L2 penalty).')
-        self.parser.add_argument(
-            '--momentum', type=float, default=0.1, help='the momentum factor of the SGD optimizer.')
-        self.parser.add_argument(
-            '--trainIter', type=int, default=100, help='the number of training iteration.')
-        self.parser.add_argument('--lrScheduler', type=str, default='cosine', choices=[
-                                 'cosine', 'step'], help='the lr scheduler while training model.')
-        self.parser.add_argument(
-            '--lrSchedulerStepSize', type=int, default=10, help='period of learning rate decay.')
-        self.parser.add_argument('--lrSchedulerGamma', type=int, default=0.1,
-                                 help='multiplicative factor of learning rate decay.')
-        self.parser.add_argument('--noEarlyStopping', action='store_true',
-                                 default=False, help='whether to use early stopping while training.')
-        self.parser.add_argument('--earlyStoppingPatience', type=int, default=3,
-                                 help='number of validation checks with no improvement after which training will be stopped.')
+        self._parser.add_argument(
+            '--train_iter', type=int, default=100, help='the number of training iteration.')
+        self._parser.add_argument('--lr_scheduler', type=str, default='CosineAnnealingLR', choices=[
+                                  'StepLR', 'CosineAnnealingLR'], help='the lr scheduler while training model.')
+        self._parser.add_argument(
+            '--step_size', type=int, default=10, help='period of learning rate decay.')
+        self._parser.add_argument('--gamma', type=int, default=0.1,
+                                  help='multiplicative factor of learning rate decay.')
+        self._parser.add_argument('--no_early_stopping', action='store_true',
+                                  default=False, help='whether to use early stopping while training.')
+        self._parser.add_argument('--patience', type=int, default=3,
+                                  help='number of checks with no improvement after which training will be stopped.')
 
         # model
-        self.parser.add_argument('--backboneModel', type=str, default='mobilenetv2', choices=[
-                                 'resnet18', 'wideresnet50', 'resnext50', 'vgg11bn', 'mobilenetv2', 'ghostnet'], help='the backbone model used for classification.')
+        self._parser.add_argument('--in_chans', type=int, default=3,
+                                  help='number of input channels / colors (default: 3).')
+        self._parser.add_argument('--backbone_model', type=str, required=True,
+                                  help='if you want to use a self-defined model, give the path of the self-defined model. otherwise, the provided backbone model is as a followed list. {}'.format(list_models()))
+        self._parser.add_argument('--checkpoint_path', type=str, default=None,
+                                  help='the path of the pre-trained model checkpoint.')
+        self._parser.add_argument('--optimizer_config_path', type=str,
+                                  default='config/optimizer.yaml', help='the optimizer config path.')
 
         # evaluate
-        self.parser.add_argument(
-            '--kFoldValue', type=int, default=5, help='the value of k-fold validation.')
+        self._parser.add_argument(
+            '--n_splits', type=int, default=5, help='number of folds. must be at least 2.')
 
         # tune
-        self.parser.add_argument(
-            '--tuneIter', type=int, default=100, help='the number of tuning iteration.')
-        self.parser.add_argument(
-            '--tuneCPU', type=int, default=2, help='CPU resources to allocate per trial.')
-        self.parser.add_argument(
-            '--tuneGPU', type=float, default=None, help='GPU resources to allocate per trial.')
-        self.parser.add_argument('--parameterSpacePath', type=str, default=None,
-                                 help='the self-defined parameter space path. if given will use self-defined parameter space to hyperparameter tuning. if not given will use default parameter space to hyperparameter tuning.')
+        self._parser.add_argument(
+            '--tune_iter', type=int, default=100, help='the number of tuning iteration.')
+        self._parser.add_argument('--tune_cpu', type=int, default=1,
+                                  help='CPU resources to allocate per trial in hyperparameter tuning.')
+        self._parser.add_argument('--tune_gpu', type=float, default=None,
+                                  help='GPU resources to allocate per trial in hyperparameter tuning.')
+        self._parser.add_argument('--hyperparameter_config_path', type=str,
+                                  default='config/hyperparameter_config.yaml', help='the hyperparameter config path.')
 
         # debug
-        self.parser.add_argument(
-            '--maxFiles', type=self.str_to_int, default=None, help='the maximum number of files.')
-        self.parser.add_argument('--report', type=str, default=None, choices=[
-                                 'simple', 'advanced'], help='whether to report the bottleneck.')
-        self.parser.add_argument('--weightsSummary', type=str, default=None, choices=[
-                                 'top', 'full'], help='whether to report the weight of the model.')
-        self.parser.add_argument('--tuneDebug', action='store_true',
-                                 default=False, help='whether to use debug mode while tuning.')
+        self._parser.add_argument(
+            '--max_files', type=self._str_to_int, default=None, help='the maximum number of files for loading files.')
+        self._parser.add_argument('--profiler', type=str, default=None, choices=[
+            'simple', 'advanced'], help='to profile individual steps during training and assist in identifying bottlenecks.')
+        self._parser.add_argument('--weights_summary', type=str, default=None, choices=[
+                                  'top', 'full'], help='prints a summary of the weights when training begins.')
+        self._parser.add_argument('--tune_debug', action='store_true',
+                                  default=False, help='whether to use debug mode while tuning.')
 
-    def str_to_str_list(self, s):
+    def _str_to_str_list(self, s):
         return [str(v) for v in s.split(',') if len(v) > 0]
 
-    def str_to_int(self, s):
-        if s == 'None' or s == 'none':
-            return None
-        else:
-            return int(s)
+    def _str_to_int(self, s):
+        return None if s == 'None' or s == 'none' else int(s)
 
-    def str_to_int_list(self, s):
+    def _str_to_int_list(self, s):
         return [int(v) for v in s.split(',') if len(v) > 0]
 
     def parse(self):
-        projectParams = self.parser.parse_args()
+        project_parameters = self._parser.parse_args()
 
         # base
-        projectParams.dataPath = abspath(projectParams.dataPath)
-        if projectParams.predefinedTask is not None:
+        project_parameters.data_path = abspath(
+            path=project_parameters.data_path)
+        if project_parameters.predefined_dataset is not None:
             # the classes of predefinedTask will automatically get from data_preparation
-            projectParams.dataPath = abspath(join(
-                './data/', projectParams.predefinedTask))
-            projectParams.numClasses = 10
-        elif projectParams.classes is None:
-            projectParams.classes = {c: idx for idx, c in enumerate(sorted(
-                [basename(c[:-1]) for c in glob(join(projectParams.dataPath, 'train/*/'))]))}
-            projectParams.numClasses = len(projectParams.classes)
-            assert projectParams.numClasses, 'there does not get any classes.'
-        else:
-            projectParams.classes = {
-                c: idx for idx, c in enumerate(sorted(projectParams.classes))}
-            projectParams.numClasses = len(projectParams.classes)
-        projectParams.useCuda = torch.cuda.is_available() and not projectParams.noCuda
-        projectParams.gpus = -1 if projectParams.useCuda else 0
-        if projectParams.valIter is None:
-            projectParams.valIter = projectParams.trainIter
-        projectParams.useBalance = not projectParams.noBalance
-        if projectParams.mode == 'tune':
-            projectParams.numWorkers = projectParams.tuneCPU
+            project_parameters.data_path = join(
+                project_parameters.data_path, project_parameters.predefined_dataset)
+        project_parameters.use_cuda = torch.cuda.is_available(
+        ) and not project_parameters.no_cuda
+        project_parameters.gpus = project_parameters.gpus if project_parameters.use_cuda else 0
 
-        # feature
-        if len(projectParams.maxImageSize) == 1:
-            projectParams.maxImageSize = projectParams.maxImageSize*2
+        # data preparation
+        if project_parameters.predefined_dataset is not None:
+            project_parameters.num_classes = 10
         else:
-            # the PIL image size is (width, height), then the maxImageSize needs to swap.
-            projectParams.maxImageSize.reverse()
+            project_parameters.classes = {
+                c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
+            project_parameters.num_classes = len(project_parameters.classes)
+        project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
 
         # train
-        projectParams.useEarlyStopping = not projectParams.noEarlyStopping
-        if projectParams.useEarlyStopping:
+        if project_parameters.val_iter is None:
+            project_parameters.val_iter = project_parameters.train_iter
+        project_parameters.use_early_stopping = not project_parameters.no_early_stopping
+        if project_parameters.use_early_stopping:
             # because the PyTorch lightning needs to get validation loss in every training epoch.
-            projectParams.valIter = 1
+            project_parameters.val_iter = 1
 
         # evaluate
-        if projectParams.mode == 'evaluate':
-            projectParams.kFoldDataPath = './kFoldDataset{}'.format(
+        if project_parameters.mode == 'evaluate':
+            project_parameters.k_fold_data_path = './k_fold_dataset{}'.format(
                 datetime.now().strftime('%Y%m%d%H%M%S'))
 
         # tune
-        if projectParams.tuneGPU is None:
-            projectParams.tuneGPU = torch.cuda.device_count()/projectParams.tuneCPU
+        if project_parameters.tune_gpu is None:
+            project_parameters.tune_gpu = torch.cuda.device_count()/project_parameters.tune_cpu
+        if project_parameters.mode == 'tune':
+            project_parameters.num_workers = project_parameters.tune_cpu
 
-        return projectParams
+        return project_parameters
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # project parameters
-    projectParams = ProjectPrameters().parse()
+    project_parameters = ProjectParameters().parse()
 
     # display each parameter
-    for k, v in vars(projectParams).items():
-        print('{:<12}= {}'.format(k, v))
+    for name, value in vars(project_parameters).items():
+        print('{:<20}= {}'.format(name, value))
