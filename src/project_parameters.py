@@ -19,7 +19,7 @@ class ProjectParameters:
         self._parser.add_argument(
             '--data_path', type=str, required=True, help='the data path.')
         self._parser.add_argument('--predefined_dataset', type=str, default=None, choices=[
-            'MNIST', 'CIFAR10'], help='the predefined dataset that provided the MNIST and CIFAR10 tasks.')
+            'MNIST', 'CIFAR10'], help='the predefined dataset that provided the MNIST and CIFAR10 datasets.')
         self._parser.add_argument(
             '--random_seed', type=self._str_to_int, default=0, help='the random seed.')
         self._parser.add_argument(
@@ -111,7 +111,7 @@ class ProjectParameters:
         project_parameters.data_path = abspath(
             path=project_parameters.data_path)
         if project_parameters.predefined_dataset is not None:
-            # the classes of predefinedTask will automatically get from data_preparation
+            # the classes of predefined dataset will automatically get from data_preparation
             project_parameters.data_path = join(
                 project_parameters.data_path, project_parameters.predefined_dataset)
         project_parameters.use_cuda = torch.cuda.is_available(

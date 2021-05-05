@@ -51,7 +51,7 @@ class DataModule(LightningDataModule):
                 dataset=train_set, lengths=train_val_lengths)
             self.dataset = {'train': train_set,
                             'val': val_set, 'test': test_set}
-            # get the classes from the trainSet
+            # get the classes from the train_set
             self.project_parameters.classes = self.dataset['train'].dataset.class_to_idx
 
     def train_dataloader(self) -> DataLoader:
