@@ -1,3 +1,5 @@
+ipython
+timm
 torch
 sklearn
 tqdm

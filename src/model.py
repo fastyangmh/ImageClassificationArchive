@@ -1,109 +1,119 @@
 # import
-from torch.optim.lr_scheduler import StepLR, CosineAnnealingLR
+import timm
 import torch
-from src.project_parameters import ProjectPrameters
-import pytorch_lightning as pl
-from torchvision.models import resnet18, wide_resnet50_2, resnext50_32x4d, vgg11_bn, mobilenet_v2
+from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
+from src.project_parameters import ProjectParameters
+from inspect import getmembers, isclass
+from importlib import import_module
+from importlib.util import spec_from_file_location, module_from_spec
+from pytorch_lightning import LightningModule
 import torch.nn as nn
-import numpy as np
-import torch.optim as optim
+from pytorch_lightning.metrics import Accuracy, ConfusionMatrix
 import pandas as pd
-from src.utils import load_checkpoint
+import numpy as np
+from src.utils import load_checkpoint, load_yaml
+import torch.optim as optim
 
 # def
 
 
-def get_classifier(projectParams):
-    officialModelDict = {'resnet18': 'resnet18', 'wideresnet50': 'wide_resnet50_2',
-                         'resnext50': 'resnext50_32x4d', 'vgg11bn': 'vgg11_bn', 'mobilenetv2': 'mobilenet_v2'}
-    pytorchHub = {'ghostnet': ['huawei-noah/ghostnet', 'ghostnet_1x']}
-    if projectParams.backboneModel in officialModelDict:
-        classifier = eval('{}(pretrained=True, progress=False)'.format(
-            officialModelDict[projectParams.backboneModel]))
+def _get_backbone_model_from_file(file_path):
+    class_name = [name for name, obj in getmembers(
+        import_module(file_path[:-3].replace('/', '.'))) if isclass(obj)]
+    if len(class_name) > 1:
+        assert False, 'the custom model has multiple class, please reduce class to 1.'
     else:
-        repo, model = pytorchHub[projectParams.backboneModel]
-        classifier = torch.hub.load(repo, model, pretrained=True)
-
-    # change the number of output feature
-    if projectParams.backboneModel in ['vgg11bn', 'mobilenetv2']:
-        classifier.classifier[-1] = nn.Linear(
-            in_features=classifier.classifier[-1].in_features, out_features=projectParams.numClasses)
-    elif projectParams.backboneModel in ['ghostnet']:
-        classifier.classifier = nn.Linear(
-            in_features=classifier.classifier.in_features, out_features=projectParams.numClasses)
-    elif projectParams.backboneModel in ['resnet18', 'wideresnet50', 'resnext50']:
-        classifier.fc = nn.Linear(
-            in_features=classifier.fc.in_features, out_features=projectParams.numClasses)
-
-    # change the number of input channels
-    if projectParams.predefinedTask == 'mnist':
-        if projectParams.backboneModel == 'vgg11bn':
-            classifier.features[0] = nn.Conv2d(
-                in_channels=1, out_channels=64, kernel_size=3, stride=1, padding=1)
-        elif projectParams.backboneModel == 'mobilenetv2':
-            classifier.features[0][0] = nn.Conv2d(
-                in_channels=1, out_channels=32, kernel_size=3, stride=2, padding=1, bias=False)
-        elif projectParams.backboneModel == 'ghostnet':
-            classifier.conv_stem = nn.Conv2d(
-                in_channels=1, out_channels=16, kernel_size=3, stride=2, padding=1, bias=False)
-        elif projectParams.backboneModel in ['resnet18', 'wideresnet50', 'resnext50']:
-            classifier.conv1 = nn.Conv2d(
-                in_channels=1, out_channels=64, kernel_size=7, stride=2, padding=3, bias=False)
-    return classifier
+        class_name = class_name[0]
+    spec = spec_from_file_location(class_name, file_path)
+    module = module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module, class_name
 
 
-def get_optimizer(model_parameters, projectParams):
-    if projectParams.optimizer == 'adam':
-        optimizer = optim.Adam(
-            params=model_parameters, lr=projectParams.lr, weight_decay=projectParams.weightDecay)
-    elif projectParams.optimizer == 'sgd':
-        optimizer = optim.SGD(
-            params=model_parameters, lr=projectParams.lr, momentum=projectParams.momentum)
-    return optimizer
+def _get_backbone_model(project_parameters):
+    if project_parameters.backbone_model in timm.list_models():
+        pretrained = True if project_parameters.in_chans == 1 or project_parameters.in_chans == 3 else False
+        backbone_model = timm.create_model(model_name=project_parameters.backbone_model, pretrained=pretrained,
+                                           num_classes=project_parameters.num_classes, in_chans=project_parameters.in_chans)
+    elif '.py' in project_parameters.backbone_model:
+        custom_backbone_model_module, custom_backbone_model_class_name = _get_backbone_model_from_file(
+            file_path=project_parameters.backbone_model)
+        backbone_model = eval('custom_backbone_model_module.{}()'.format(
+            custom_backbone_model_class_name))
+    else:
+        assert False, 'please check the backbone model. the backbone model: {}'.format(
+            project_parameters.backbone_model)
+    return backbone_model
 
 
-def get_lr_scheduler(projectParams, optimizer):
-    if projectParams.lrScheduler == 'cosine':
-        lrScheduler = CosineAnnealingLR(
-            optimizer=optimizer, T_max=projectParams.lrSchedulerStepSize)
-    elif projectParams.lrScheduler == 'step':
-        lrScheduler = StepLR(
-            optimizer=optimizer, step_size=projectParams.lrSchedulerStepSize, gamma=projectParams.lrSchedulerGamma)
-    return lrScheduler
-
-
-def get_criterion(projectParams):
-    if 'dataWeight' in projectParams:
-        # in order to prevent error while predict stage or predefinedTask, the condition use it
-        weight = torch.Tensor(list(projectParams.dataWeight.values()))
+def _get_loss_function(project_parameters):
+    if 'data_weight' in project_parameters:
+        weight = torch.Tensor(list(project_parameters.data_weight.values()))
     else:
         weight = None
-    criterion = nn.CrossEntropyLoss(weight=weight)
-    return criterion
+    return nn.CrossEntropyLoss(weight=weight)
 
 
-def create_model(projectParams):
-    model = Net(projectParams=projectParams)
-    if projectParams.checkpointPath is not None:
-        model = load_checkpoint(model=model, projectParams=projectParams)
+def _get_optimizer(model_parameters, project_parameters):
+    optimizer_config = load_yaml(
+        file_path=project_parameters.optimizer_config_path)
+    optimizer_name = list(optimizer_config.keys())[0]
+    if optimizer_name in dir(optim):
+        for name, value in optimizer_config.items():
+            if value is None:
+                optimizer = eval('optim.{}(params=model_parameters, lr={})'.format(
+                    optimizer_name, project_parameters.lr))
+            elif type(value) is dict:
+                value = ('{},'*len(value)).format(*['{}={}'.format(a, b)
+                                                    for a, b in value.items()])
+                optimizer = eval('optim.{}(params=model_parameters, lr={}, {})'.format(
+                    optimizer_name, project_parameters.lr, value))
+            else:
+                assert False, '{}: {}'.format(name, value)
+        return optimizer
+    else:
+        assert False, 'please check the optimizer. the optimizer config: {}'.format(
+            optimizer_config)
+
+
+def _get_lr_scheduler(project_parameters, optimizer):
+    if project_parameters.lr_scheduler == 'StepLR':
+        lr_scheduler = StepLR(optimizer=optimizer,
+                              step_size=project_parameters.step_size, gamma=project_parameters.gamma)
+    elif project_parameters.lr_scheduler == 'CosineAnnealingLR':
+        lr_scheduler = CosineAnnealingLR(
+            optimizer=optimizer, T_max=project_parameters.step_size)
+    else:
+        assert False, 'please check the lr scheduler. the lr scheduler: {}'.format(
+            project_parameters.lr_scheduler)
+    return lr_scheduler
+
+
+def create_model(project_parameters):
+    model = Net(project_parameters=project_parameters)
+    if project_parameters.checkpoint_path is not None:
+        model = load_checkpoint(model=model, use_cuda=project_parameters.use_cuda,
+                                checkpoint_path=project_parameters.checkpoint_path)
     return model
 
 # class
 
 
-class Net(pl.LightningModule):
-    def __init__(self, projectParams):
+class Net(LightningModule):
+    def __init__(self, project_parameters):
         super().__init__()
-        self.classifier = get_classifier(projectParams=projectParams)
-        self.activation = nn.Softmax(dim=-1)
-        self.criterion = get_criterion(projectParams=projectParams)
-        self.accuracy = pl.metrics.Accuracy()
-        self.confMat = pl.metrics.ConfusionMatrix(
-            num_classes=projectParams.numClasses)
-        self.projectParams = projectParams
+        self.project_parameters = project_parameters
+        self.backbone_model = _get_backbone_model(
+            project_parameters=project_parameters)
+        self.activation_function = nn.Softmax(dim=-1)
+        self.loss_function = _get_loss_function(
+            project_parameters=project_parameters)
+        self.accuracy = Accuracy()
+        self.confusion_matrix = ConfusionMatrix(
+            num_classes=project_parameters.num_classes)
 
     def forward(self, x):
-        return self.activation(self.classifier(x))
+        return self.activation_function(self.backbone_model(x))
 
     def get_progress_bar_dict(self):
         # don't show the loss value
@@ -111,91 +121,96 @@ class Net(pl.LightningModule):
         items.pop('loss', None)
         return items
 
-    def training_step(self, batch, batchIndex):
+    def _parse_outputs(self, outputs, calculate_confusion_matrix):
+        epoch_loss = []
+        epoch_accuracy = []
+        if calculate_confusion_matrix:
+            y_true = []
+            y_pred = []
+        for step in outputs:
+            epoch_loss.append(step['loss'].item())
+            epoch_accuracy.append(step['accuracy'].item())
+            if calculate_confusion_matrix:
+                y_pred.append(step['y_hat'])
+                y_true.append(step['y'])
+        if calculate_confusion_matrix:
+            y_pred = torch.cat(y_pred, 0)
+            y_true = torch.cat(y_true, 0)
+            confmat = pd.DataFrame(self.confusion_matrix(y_pred, y_true).tolist(
+            ), columns=self.project_parameters.classes.keys(), index=self.project_parameters.classes.keys()).astype(int)
+            return epoch_loss, epoch_accuracy, confmat
+        else:
+            return epoch_loss, epoch_accuracy
+
+    def training_step(self, batch, batch_idx):
         x, y = batch
-        yhat = self.classifier(x)
-        loss = self.criterion(yhat, y)
-        trainACC = self.accuracy(yhat, y)
-        return {'loss': loss, 'accuracy': trainACC}
+        y_hat = self.backbone_model(x)
+        loss = self.loss_function(y_hat, y)
+        train_step_accuracy = self.accuracy(y_hat, y)
+        return {'loss': loss, 'accuracy': train_step_accuracy}
 
     def training_epoch_end(self, outputs) -> None:
-        epochLoss = []
-        epochAcc = []
-        for stepDict in outputs:
-            epochLoss.append(stepDict['loss'].item())
-            epochAcc.append(stepDict['accuracy'].item())
-        self.log('train epoch loss', np.mean(
-            epochLoss), on_epoch=True, prog_bar=True)
-        self.log('train epoch accuracy', np.mean(epochAcc))
+        epoch_loss, epoch_accuracy = self._parse_outputs(
+            outputs=outputs, calculate_confusion_matrix=False)
+        self.log('training loss', np.mean(epoch_loss),
+                 on_epoch=True, prog_bar=True)
+        self.log('training accuracy', np.mean(epoch_accuracy))
 
-    def validation_step(self, batch, batchIndex):
+    def validation_step(self, batch, batch_idx):
         x, y = batch
-        yhat = self.forward(x)
-        loss = self.criterion(yhat, y)
-        valAcc = self.accuracy(yhat, y)
-        return {'loss': loss, 'accuracy': valAcc}
+        y_hat = self.forward(x)
+        loss = self.loss_function(y_hat, y)
+        val_step_accuracy = self.accuracy(y_hat, y)
+        return {'loss': loss, 'accuracy': val_step_accuracy}
 
     def validation_epoch_end(self, outputs) -> None:
-        epochLoss = []
-        epochAcc = []
-        for stepDict in outputs:
-            epochLoss.append(stepDict['loss'].item())
-            epochAcc.append(stepDict['accuracy'].item())
-        self.log('validation epoch loss', np.mean(
-            epochLoss), on_epoch=True, prog_bar=True)
-        self.log('validation epoch accuracy', np.mean(epochAcc))
+        epoch_loss, epoch_accuracy = self._parse_outputs(
+            outputs=outputs, calculate_confusion_matrix=False)
+        self.log('validation loss', np.mean(epoch_loss),
+                 on_epoch=True, prog_bar=True)
+        self.log('validation accuracy', np.mean(epoch_accuracy))
 
-    def test_step(self, batch, batchIndex):
+    def test_step(self, batch, batch_idx):
         x, y = batch
-        yhat = self.forward(x)
-        loss = self.criterion(yhat, y)
-        testAcc = self.accuracy(yhat, y)
-        return {'loss': loss, 'accuracy': testAcc, 'yPred': yhat, 'yTrue': y}
+        y_hat = self.forward(x)
+        loss = self.loss_function(y_hat, y)
+        test_step_accuracy = self.accuracy(y_hat, y)
+        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
 
     def test_epoch_end(self, outputs) -> None:
-        epochLoss = []
-        epochAcc = []
-        yPred = []
-        yTrue = []
-        for stepDict in outputs:
-            epochLoss.append(stepDict['loss'].item())
-            epochAcc.append(stepDict['accuracy'].item())
-            yPred.append(stepDict['yPred'])
-            yTrue.append(stepDict['yTrue'])
-        self.log('test epoch loss', np.mean(epochLoss))
-        self.log('test epoch accuracy', np.mean(epochAcc))
-        yPred = torch.cat(yPred, 0)
-        yTrue = torch.cat(yTrue, 0)
-        confMat = pd.DataFrame(self.confMat(yPred, yTrue).tolist(), columns=self.projectParams.classes.keys(
-        ), index=self.projectParams.classes.keys()).astype(int)
-        print(confMat)
+        epoch_loss, epoch_accuracy, confmat = self._parse_outputs(
+            outputs=outputs, calculate_confusion_matrix=True)
+        self.log('test loss', np.mean(epoch_loss))
+        self.log('test accuracy', np.mean(epoch_accuracy))
+        print(confmat)
 
     def configure_optimizers(self):
-        optimizer = get_optimizer(
-            model_parameters=self.parameters(), projectParams=self.projectParams)
-        if self.projectParams.lrSchedulerStepSize > 0:
-            lrScheduler = get_lr_scheduler(
-                projectParams=self.projectParams, optimizer=optimizer)
-            return [optimizer], [lrScheduler]
+        optimizer = _get_optimizer(model_parameters=self.parameters(
+        ), project_parameters=self.project_parameters)
+        if self.project_parameters.step_size > 0:
+            lr_scheduler = _get_lr_scheduler(
+                project_parameters=self.project_parameters, optimizer=optimizer)
+            return [optimizer], [lr_scheduler]
         else:
             return optimizer
 
 
 if __name__ == '__main__':
     # project parameters
-    projectParams = ProjectPrameters().parse()
-    projectParams.numClasses = 2
-    channel = 1 if projectParams.predefinedTask == 'mnist' else 3
+    project_parameters = ProjectParameters().parse()
 
     # create model
-    model = create_model(projectParams=projectParams)
+    model = create_model(project_parameters=project_parameters)
+
+    # display model information
+    model.summarize()
 
     # create input data
-    x = torch.ones(projectParams.batchSize, channel,
-                   projectParams.maxImageSize[0], projectParams.maxImageSize[1])
+    x = torch.ones(project_parameters.batch_size,
+                   project_parameters.in_chans, 224, 224)
 
     # get model output
-    y = model(x)
+    y = model.forward(x)
 
     # display the dimension of input and output
     print(x.shape)

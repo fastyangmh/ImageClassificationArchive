@@ -1,0 +1,15 @@
+int:
+  train_iter:
+    - 10
+    - 200
+  step_size:
+    - 1
+    - 10
+float:
+  lr:
+    - 1e-4
+    - 1e-1
+choice:
+  lr_scheduler:
+    - CosineAnnealingLR
+    - StepLR

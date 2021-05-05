@@ -1,117 +1,114 @@
 # import
-from src.project_parameters import ProjectPrameters
 from glob import glob
-from os.path import join
-import numpy as np
 from os import makedirs
-from shutil import copy2, copytree, rmtree
+from os.path import join
+from src.train import train
+import numpy as np
+from src.utils import get_files
+from src.project_parameters import ProjectParameters
 from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
-from src.train import train
+from shutil import copy2, copytree, rmtree
 
 # def
 
 
-def dataPath2Dataset(projectParams):
+def _train_val_dataset_from_data_path(project_parameters):
     data, label = [], []
     for stage in ['train', 'val']:
-        for c in projectParams.classes.keys():
-            temp = []
-            for ext in ['png', 'jpg']:
-                temp += glob(join(projectParams.dataPath,
-                                  '{}/{}/*.{}'.format(stage, c, ext)))
-            temp = sorted(temp)
-            data += temp
-            label += [projectParams.classes[c]]*len(temp)
+        for c in project_parameters.classes.keys():
+            files = get_files(file_path=join(
+                project_parameters.data_path, '{}/{}'.format(stage, c)), file_type=['jpg', 'png'])
+            data += sorted(files)
+            label += [project_parameters.classes[c]]*len(files)
     return {'data': np.array(data), 'label': np.array(label)}
 
 
-def copyFile2Dst(files, dst, projectParams):
-    for c in projectParams.classes.keys():
-        makedirs(join(dst, c), exist_ok=True)
-        for file in files:
-            if c in file:
-                copy2(src=file, dst=join(dst, c))
+def _copy_files_to_destination_path(files, destination_path, project_parameters):
+    for c in project_parameters.classes.keys():
+        makedirs(name=join(destination_path, c), exist_ok=True)
+        for f in files:
+            if c in f:
+                copy2(src=f, dst=join(destination_path, c))
 
 
-def create_kFold_dataset(projectParams, dataset):
-    sKF = StratifiedKFold(n_splits=projectParams.kFoldValue, shuffle=True)
-    for idx, (trainIndex, valIndex) in tqdm(enumerate(sKF.split(X=dataset['data'], y=dataset['label'])), total=projectParams.kFoldValue):
-        xTrain = dataset['data'][trainIndex]
-        xVal = dataset['data'][valIndex]
-        dst = join(projectParams.kFoldDataPath, 'kFold{}'.format(idx+1))
-        makedirs(join(dst, 'train'), exist_ok=True)
-        makedirs(join(dst, 'val'), exist_ok=True)
-        copyFile2Dst(files=xTrain, dst=join(dst, 'train'),
-                     projectParams=projectParams)
-        copyFile2Dst(files=xVal, dst=join(dst, 'val'),
-                     projectParams=projectParams)
-        copytree(src=join(projectParams.dataPath, 'test'),
-                 dst=join(dst, 'test'))
+def _create_k_fold_data(project_parameters, dataset):
+    skf = StratifiedKFold(n_splits=project_parameters.n_splits, shuffle=True)
+    for idx, (train_index, val_index) in tqdm(enumerate(skf.split(X=dataset['data'], y=dataset['label'])), total=project_parameters.n_splits):
+        x_train = dataset['data'][train_index]
+        x_val = dataset['data'][val_index]
+        destination_path = join(
+            project_parameters.k_fold_data_path, 'k_fold_{}'.format(idx+1))
+        makedirs(name=join(destination_path, 'train'), exist_ok=True)
+        makedirs(name=join(destination_path, 'val'), exist_ok=True)
+        _copy_files_to_destination_path(files=x_train, destination_path=join(
+            destination_path, 'train'), project_parameters=project_parameters)
+        _copy_files_to_destination_path(files=x_val, destination_path=join(
+            destination_path, 'val'), project_parameters=project_parameters)
+        copytree(src=join(project_parameters.data_path, 'test'),
+                 dst=join(destination_path, 'test'))
 
 
-def get_kFold_result(projectParams):
-    print('start k-fold validation')
+def _get_k_fold_result(project_parameters):
+    print('start k-fold cross-validation')
     results = {}
-    directories = sorted(glob(join(projectParams.kFoldDataPath, '*/')))
+    directories = sorted(glob(join(project_parameters.k_fold_data_path, '*/')))
     for idx, directory in enumerate(directories):
         print('-'*30)
-        print('\nk-fold validation: {}/{}'.format(idx+1, projectParams.kFoldValue))
-        projectParams.dataPath = directory
-        results[idx+1] = train(projectParams=projectParams)
+        print('\nk-fold cross-validation: {}/{}'.format(idx +
+                                                        1, project_parameters.n_splits))
+        project_parameters.data_path = directory
+        results[idx+1] = train(project_parameters=project_parameters)
     return results
 
 
-def parse_kFold_result(results):
-    trainLoss, valLoss, testLoss = [], [], []
-    accTrain, accVal, accTest = [], [], []
-    for v in results.values():
-        eachStageResult = {stage: list(v[stage][0].values())
-                           for stage in ['train', 'val', 'test']}
-        trainLoss.append(eachStageResult['train'][0])
-        accTrain.append(eachStageResult['train'][1])
-        valLoss.append(eachStageResult['val'][0])
-        accVal.append(eachStageResult['val'][1])
-        testLoss.append(eachStageResult['test'][0])
-        accTest.append(eachStageResult['test'][1])
-    return {'train': (trainLoss, accTrain), 'val': (valLoss, accVal), 'test': (testLoss, accTest)}
+def _parse_k_fold_result(results):
+    train_loss, val_loss, test_loss = [], [], []
+    train_acc, val_acc, test_acc = [], [], []
+    for result in results.values():
+        each_stage_result = {stage: list(result[stage][0].values()) for stage in [
+            'train', 'val', 'test']}
+        train_loss.append(each_stage_result['train'][0])
+        train_acc.append(each_stage_result['train'][1])
+        val_loss.append(each_stage_result['val'][0])
+        val_acc.append(each_stage_result['val'][1])
+        test_loss.append(each_stage_result['test'][0])
+        test_acc.append(each_stage_result['test'][1])
+    return {'train': (train_loss, train_acc),
+            'val': (val_loss, val_acc),
+            'test': (test_loss, test_acc)}
 
 
-def kFold_validation(projectParams):
-    # load files to dataset
-    dataset = dataPath2Dataset(projectParams=projectParams)
+def _calculate_mean_and_error(arrays):
+    return np.mean(arrays), (max(arrays)-min(arrays)/2)
 
-    # create split index and copy file to destination
-    create_kFold_dataset(projectParams=projectParams, dataset=dataset)
 
-    # train the model by the kFoldDataPath
-    results = get_kFold_result(projectParams=projectParams)
-
-    # parse the results
-    results = parse_kFold_result(results=results)
-
-    # display information
-    print('-'*20)
-    print('\nthe result of the model with given parameters is as follows.')
-    print('k-Fold validation training loss mean:\t{} ± {}'.format(np.mean(
-        results['train'][0]), (max(results['train'][0])-min(results['train'][0]))/2))
-    print('Train accuracy mean:\t{} ± {}'.format(np.mean(
-        results['train'][1]), (max(results['train'][1])-min(results['train'][1]))/2))
-    print('Validation accuracy mean:\t{} ± {}'.format(
-        np.mean(results['val'][1]), (max(results['val'][1])-min(results['val'][1]))/2))
-    print('Test accuracy mean:\t{} ± {}'.format(np.mean(
-        results['test'][1]), (max(results['test'][1])-min(results['test'][1]))/2))
-
-    # remove kFoldDataPath
-    rmtree(path=projectParams.kFoldDataPath)
+def evaluate(project_parameters):
+    train_val_dataset = _train_val_dataset_from_data_path(
+        project_parameters=project_parameters)
+    _create_k_fold_data(project_parameters=project_parameters,
+                        dataset=train_val_dataset)
+    results = _get_k_fold_result(project_parameters=project_parameters)
+    results = _parse_k_fold_result(results=results)
+    print('-'*30)
+    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
+                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
+    print('k-fold cross-validation training accuracy mean:\t{} ± {}'.format(*
+                                                                            _calculate_mean_and_error(arrays=results['train'][1])))
+    print('k-fold cross-validation validation accuracy mean:\t{} ± {}'.format(*
+                                                                              _calculate_mean_and_error(arrays=results['val'][1])))
+    print('k-fold cross-validation test accuracy mean:\t{} ± {}'.format(*
+                                                                        _calculate_mean_and_error(arrays=results['test'][1])))
+    rmtree(path=project_parameters.k_fold_data_path)
+    return results
 
 
 if __name__ == '__main__':
     # project parameters
-    projectParams = ProjectPrameters().parse()
+    project_parameters = ProjectParameters().parse()
 
-    # k-fold validation
-    if projectParams.predefinedTask is None:
-        kFold_validation(projectParams=projectParams)
+    # k-fold cross validation
+    if project_parameters.predefined_dataset is not None:
+        print('temporarily does not support predefined dataset.')
     else:
-        print('Temporarily does not support predefined tasks.')
+        result = evaluate(project_parameters=project_parameters)

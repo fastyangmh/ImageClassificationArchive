@@ -1,48 +1,48 @@
 # import
 import torch
-from src.project_parameters import ProjectPrameters
+from torch.utils.data.dataloader import DataLoader
+from torchvision.datasets.folder import ImageFolder
+from src.utils import get_transform_from_file
 from src.model import create_model
-from torchvision import transforms
-from torchvision.datasets import ImageFolder
-from torch.utils.data import DataLoader
-import numpy as np
+from src.project_parameters import ProjectParameters
 from PIL import Image
+import numpy as np
 
 # class
 
 
 class Predict:
-    def __init__(self, projectParams):
-        self.projectParams = projectParams
-        self.model = create_model(projectParams=projectParams).eval()
-        self.transform = transforms.Compose([transforms.Resize((projectParams.maxImageSize[0], projectParams.maxImageSize[1])),
-                                             transforms.ToTensor()])
+    def __init__(self, project_parameters) -> None:
+        self.project_parameters = project_parameters
+        self.model = create_model(project_parameters=project_parameters)
+        self.transform = get_transform_from_file(
+            file_path=project_parameters.transform_config_path)['predict']
 
-    def get_result(self, dataPath):
+    def get_result(self, data_path):
         result = []
-        if '.png' in dataPath or '.jpg' in dataPath:
-            img = Image.open(dataPath).convert('RGB')
-            img = self.transform(img)[None, :]
+        if '.png' in data_path or '.jpg' in data_path:
+            image = Image.open(fp=data_path).convert('RGB')
+            image = self.transform(image)[None, :]
             with torch.no_grad():
-                result.append(self.model(img).tolist()[0])
+                result.append(self.model(image).tolist()[0])
         else:
-            dataset = ImageFolder(dataPath, transform=self.transform)
-            dataLoader = DataLoader(dataset, batch_size=self.projectParams.batchSize,
-                                    pin_memory=self.projectParams.useCuda, num_workers=self.projectParams.numWorkers)
+            dataset = ImageFolder(root=data_path, transform=self.transform)
+            data_loader = DataLoader(dataset=dataset, batch_size=self.project_parameters.batch_size,
+                                     pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
             with torch.no_grad():
-                for img, _ in dataLoader:
-                    result.append(self.model(img).tolist())
+                for image, _ in data_loader:
+                    result.append(self.model(image).tolist())
         return np.concatenate(result, 0).round(2)
 
 
 if __name__ == '__main__':
     # project parameters
-    projectParams = ProjectPrameters().parse()
+    project_parameters = ProjectParameters().parse()
 
-    # predict
-    result = Predict(projectParams=projectParams).get_result(
-        dataPath=projectParams.dataPath)
+    # predict the data path
+    result = Predict(project_parameters=project_parameters).get_result(
+        data_path=project_parameters.data_path)
     # use [:-1] to remove the latest comma
-    print(('{},'*projectParams.numClasses).format(*
-                                                  projectParams.classes.keys())[:-1])
+    print(('{},'*project_parameters.num_classes).format(*
+                                                        project_parameters.classes.keys())[:-1])
     print(result)
