@@ -1,0 +1,28 @@
+train:
+  Resize:
+    - 224
+    - 224
+  ColorJitter:
+  RandomRotation: 90
+  RandomHorizontalFlip:
+  RandomVerticalFlip:
+  ToTensor:
+  RandomErasing:
+
+val:
+  Resize:
+    - 224
+    - 224
+  ToTensor:
+
+test:
+  Resize:
+    - 224
+    - 224
+  ToTensor:
+
+predict:
+  Resize:
+    - 224
+    - 224
+  ToTensor:
