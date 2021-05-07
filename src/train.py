@@ -40,13 +40,10 @@ def train(project_parameters):
     result = {'trainer': trainer,
               'model': model}
     trainer.callback_connector.configure_progress_bar().disable()
-    for stage, data_loader in zip(['train', 'val', 'test'], data_module.get_data_loaders().items()):
-        if stage == data_loader[0]:
-            print('\ntest the {} dataset'.format(stage))
-            print('the {} dataset confusion matrix:'.format(stage))
-            result[stage] = trainer.test(test_dataloaders=data_loader[1])
-        else:
-            assert False, 'the stage not equals the key of data loader.'
+    for stage, data_loader in data_module.get_data_loaders().items():
+        print('\ntest the {} dataset'.format(stage))
+        print('the {} dataset confusion matrix:'.format(stage))
+        result[stage] = trainer.test(test_dataloaders=data_loader)
     trainer.callback_connector.configure_progress_bar().enable()
     return result
 
