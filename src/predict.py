@@ -14,7 +14,7 @@ import numpy as np
 class Predict:
     def __init__(self, project_parameters) -> None:
         self.project_parameters = project_parameters
-        self.model = create_model(project_parameters=project_parameters)
+        self.model = create_model(project_parameters=project_parameters).eval()
         self.transform = get_transform_from_file(
             file_path=project_parameters.transform_config_path)['predict']
 
