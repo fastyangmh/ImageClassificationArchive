@@ -1,6 +1,6 @@
 # import
 import argparse
-from os.path import abspath, join
+from os.path import abspath, isfile, join
 from timm import list_models
 import torch
 from datetime import datetime
@@ -132,6 +132,9 @@ class ProjectParameters:
         # model
         project_parameters.optimizer_config_path = abspath(
             project_parameters.optimizer_config_path)
+        if isfile(project_parameters.backbone_model):
+            project_parameters.backbone_model = abspath(
+                project_parameters.backbone_model)
 
         # train
         if project_parameters.val_iter is None:
