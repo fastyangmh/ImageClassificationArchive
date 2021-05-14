@@ -40,7 +40,7 @@ class ProjectParameters:
         ), help='how many subprocesses to use for data loading.')
         self._parser.add_argument(
             '--no_balance', action='store_true', default=False, help='whether to balance the data.')
-        self._parser.add_argument('--transform_config_path', type=str,
+        self._parser.add_argument('--transform_config_path', type=self._str_to_str,
                                   default='config/transform.yaml', help='the transform config path.')
 
         # train
@@ -95,6 +95,9 @@ class ProjectParameters:
         self._parser.add_argument('--tune_debug', action='store_true',
                                   default=False, help='whether to use debug mode while tuning.')
 
+    def _str_to_str(self, s):
+        return None if s == 'None' or s == 'none' else s
+
     def _str_to_str_list(self, s):
         return [str(v) for v in s.split(',') if len(v) > 0]
 
@@ -126,8 +129,9 @@ class ProjectParameters:
                 c: idx for idx, c in enumerate(sorted(project_parameters.classes))}
             project_parameters.num_classes = len(project_parameters.classes)
         project_parameters.use_balance = not project_parameters.no_balance and project_parameters.predefined_dataset is None
-        project_parameters.transform_config_path = abspath(
-            project_parameters.transform_config_path)
+        if project_parameters.transform_config_path is not None:
+            project_parameters.transform_config_path = abspath(
+                project_parameters.transform_config_path)
 
         # model
         project_parameters.optimizer_config_path = abspath(
