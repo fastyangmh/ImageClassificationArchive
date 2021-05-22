@@ -4,6 +4,7 @@ from os.path import abspath, isfile, join
 from timm import list_models
 import torch
 from datetime import datetime
+from src.utils import load_yaml
 
 # class
 
@@ -28,6 +29,8 @@ class ProjectParameters:
                                   help='whether to use Cuda to train the model. if True which will train the model on CPU. if False which will train on GPU.')
         self._parser.add_argument('--gpus', type=self._str_to_int_list, default=-1,
                                   help='number of GPUs to train on (int) or which GPUs to train on (list or str) applied per node. if give -1 will use all available GPUs.')
+        self._parser.add_argument(
+            '--parameters_config_path', type=str, default=None, help='the parameters config path.')
 
         # data preparation
         self._parser.add_argument(
@@ -83,7 +86,7 @@ class ProjectParameters:
         self._parser.add_argument('--tune_gpu', type=float, default=None,
                                   help='GPU resources to allocate per trial in hyperparameter tuning.')
         self._parser.add_argument('--hyperparameter_config_path', type=str,
-                                  default='config/hyperparameter_config.yaml', help='the hyperparameter config path.')
+                                  default='config/hyperparameter.yaml', help='the hyperparameter config path.')
 
         # debug
         self._parser.add_argument(
@@ -107,8 +110,18 @@ class ProjectParameters:
     def _str_to_int_list(self, s):
         return [int(v) for v in s.split(',') if len(v) > 0]
 
+    def _get_new_dict(self, old_dict, yaml_dict):
+        for k in yaml_dict.keys():
+            del old_dict[k]
+        return {**old_dict, **yaml_dict}
+
     def parse(self):
         project_parameters = self._parser.parse_args()
+        if project_parameters.parameters_config_path is not None:
+            project_parameters = argparse.Namespace(**self._get_new_dict(old_dict=vars(
+                project_parameters), yaml_dict=load_yaml(filepath=abspath(project_parameters.parameters_config_path))))
+        else:
+            del project_parameters.parameters_config_path
 
         # base
         project_parameters.data_path = abspath(
