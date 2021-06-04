@@ -5,7 +5,7 @@ from torch.optim.lr_scheduler import CosineAnnealingLR, StepLR
 from src.project_parameters import ProjectParameters
 from pytorch_lightning import LightningModule
 import torch.nn as nn
-from pytorch_lightning.metrics import Accuracy, ConfusionMatrix
+from torchmetrics import Accuracy, ConfusionMatrix
 import pandas as pd
 import numpy as np
 from src.utils import load_checkpoint, load_yaml
@@ -42,7 +42,7 @@ def _get_loss_function(project_parameters):
         weight = torch.Tensor(list(project_parameters.data_weight.values()))
     else:
         weight = None
-    return nn.CrossEntropyLoss(weight=weight)
+    return nn.NLLLoss(weight=weight)
 
 
 def _get_optimizer(model_parameters, project_parameters):
@@ -135,8 +135,9 @@ class Net(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.backbone_model(x)
-        loss = self.loss_function(y_hat, y)
+        y_hat = self.forward(x)
+        loss = self.loss_function(torch.log(y_hat).nan_to_num(
+            neginf=torch.log(torch.tensor(1e-10))), y)
         train_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
@@ -150,7 +151,8 @@ class Net(LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = self.loss_function(y_hat, y)
+        loss = self.loss_function(torch.log(y_hat).nan_to_num(
+            neginf=torch.log(torch.tensor(1e-10))), y)
         val_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
 
@@ -164,7 +166,8 @@ class Net(LightningModule):
     def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
-        loss = self.loss_function(y_hat, y)
+        loss = self.loss_function(torch.log(y_hat).nan_to_num(
+            neginf=torch.log(torch.tensor(1e-10))), y)
         test_step_accuracy = self.accuracy(y_hat, y)
         return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
 
