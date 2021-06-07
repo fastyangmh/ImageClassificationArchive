@@ -11,6 +11,7 @@ import numpy as np
 from src.utils import load_checkpoint, load_yaml
 import torch.optim as optim
 from os.path import dirname, basename
+import torch.nn.functional as F
 
 # def
 
@@ -42,7 +43,7 @@ def _get_loss_function(project_parameters):
         weight = torch.Tensor(list(project_parameters.data_weight.values()))
     else:
         weight = None
-    return nn.NLLLoss(weight=weight)
+    return nn.CrossEntropyLoss(weight=weight)
 
 
 def _get_optimizer(model_parameters, project_parameters):
@@ -135,10 +136,9 @@ class Net(LightningModule):
 
     def training_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
-        loss = self.loss_function(torch.log(y_hat).nan_to_num(
-            neginf=torch.log(torch.tensor(1e-10))), y)
-        train_step_accuracy = self.accuracy(y_hat, y)
+        y_hat = self.backbone_model(x)
+        loss = self.loss_function(y_hat, y)
+        train_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': train_step_accuracy}
 
     def training_epoch_end(self, outputs) -> None:
@@ -150,10 +150,9 @@ class Net(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
-        loss = self.loss_function(torch.log(y_hat).nan_to_num(
-            neginf=torch.log(torch.tensor(1e-10))), y)
-        val_step_accuracy = self.accuracy(y_hat, y)
+        y_hat = self.backbone_model(x)
+        loss = self.loss_function(y_hat, y)
+        val_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
         return {'loss': loss, 'accuracy': val_step_accuracy}
 
     def validation_epoch_end(self, outputs) -> None:
@@ -165,11 +164,10 @@ class Net(LightningModule):
 
     def test_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
-        loss = self.loss_function(torch.log(y_hat).nan_to_num(
-            neginf=torch.log(torch.tensor(1e-10))), y)
-        test_step_accuracy = self.accuracy(y_hat, y)
-        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': y_hat, 'y': y}
+        y_hat = self.backbone_model(x)
+        loss = self.loss_function(y_hat, y)
+        test_step_accuracy = self.accuracy(F.softmax(y_hat, dim=-1), y)
+        return {'loss': loss, 'accuracy': test_step_accuracy, 'y_hat': F.softmax(y_hat, dim=-1), 'y': y}
 
     def test_epoch_end(self, outputs) -> None:
         epoch_loss, epoch_accuracy, confmat = self._parse_outputs(
