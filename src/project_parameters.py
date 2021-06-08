@@ -63,6 +63,8 @@ class ProjectParameters:
                                   default=False, help='whether to use early stopping while training.')
         self._parser.add_argument('--patience', type=int, default=3,
                                   help='number of checks with no improvement after which training will be stopped.')
+        self._parser.add_argument('--precision', type=int, default=32, choices=[
+                                  16, 32], help='full precision (32) or half precision (16). Can be used on CPU, GPU or TPUs.')
 
         # model
         self._parser.add_argument('--in_chans', type=int, default=3,
