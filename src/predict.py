@@ -16,7 +16,7 @@ class Predict:
     """
 
     def __init__(self, project_parameters):
-        """Initialize the model
+        """Initialize the class.
 
         Args:
             project_parameters (argparse.Namespace): the parameters for the project.
