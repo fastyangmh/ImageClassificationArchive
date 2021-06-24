@@ -12,6 +12,14 @@ warnings.filterwarnings("ignore")
 
 
 def _get_trainer(project_parameters):
+    """Returns a trainer .
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        pytorch_lightning.trainer.trainer.Trainer: Customize every aspect of training via flags.
+    """
     callbacks = [ModelCheckpoint(monitor='validation accuracy', mode='max'),
                  LearningRateMonitor(logging_interval='epoch', log_momentum=True)]
     if project_parameters.use_early_stopping:
@@ -30,6 +38,14 @@ def _get_trainer(project_parameters):
 
 
 def train(project_parameters):
+    """Train the model.
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        dict: the dictionary contains trainer, model, and the results of train, validation, test.
+    """
     seed_everything(seed=project_parameters.random_seed)
     if project_parameters.use_balance:
         project_parameters.data_weight = calculate_data_weight(

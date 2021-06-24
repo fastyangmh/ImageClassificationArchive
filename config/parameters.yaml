@@ -3,6 +3,7 @@ random_seed: 0
 save_path: save/
 no_cuda: False
 gpus: -1
+parameters_config_path: config/parameters.yaml
 
 # data_preparation
 batch_size: 32
@@ -20,6 +21,7 @@ step_size: 10
 gamma: 0.1
 no_early_stopping: False
 patience: 3
+precision: 32
 
 # model
 in_chans: 3
