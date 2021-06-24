@@ -11,7 +11,7 @@ class SelfDefinedModel(nn.Module):
     """
 
     def __init__(self, in_chans, num_classes):
-        """Initialize the classifier .
+        """Initialize the class.
 
         Args:
             in_chans (int): number of input channels / colors.

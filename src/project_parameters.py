@@ -10,11 +10,10 @@ from src.utils import load_yaml
 
 
 class ProjectParameters:
-    """ Constructs a ProjectParameters class to store the parameters.
+    """Constructs a ProjectParameters class to store the parameters.
     """
-
     def __init__(self):
-        """Argument parser .
+        """Initialize the class.
         """
         self._parser = argparse.ArgumentParser(
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
