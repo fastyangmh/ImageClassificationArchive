@@ -5,6 +5,7 @@ from timm import list_models
 import torch
 from datetime import datetime
 from src.utils import load_yaml
+import numpy as np
 
 # class
 
@@ -41,7 +42,7 @@ class ProjectParameters:
         self._parser.add_argument(
             '--batch_size', type=int, default=32, help='how many samples per batch to load.')
         self._parser.add_argument('--classes', type=self._str_to_str_list, required=True,
-                                  help='the classes of data. if use a predefined dataset, please set value as None.')
+                                  help='the classes of data. if use a predefined dataset, please set the value as None. if you have classes.txt, please set the value as the text file path. notice, please follow the text file format from the README.md.')
         self._parser.add_argument('--val_size', type=float, default=0.2,
                                   help='the validation data size used for the predefined dataset.')
         self._parser.add_argument('--num_workers', type=int, default=torch.get_num_threads(
@@ -124,12 +125,15 @@ class ProjectParameters:
         """Convert a string to a list .
 
         Args:
-            s (str): a string contains commas.
+            s (str): a string contains commas or the string is a text file path.
 
         Returns:
             list: a list of strings.
         """
-        return [str(v) for v in s.split(',') if len(v) > 0]
+        if '.txt' in s:
+            return list(np.loadtxt(abspath(s), str))
+        else:
+            return [str(v) for v in s.split(',') if len(v) > 0]
 
     def _str_to_int(self, s):
         """Convert a string to an integer .
