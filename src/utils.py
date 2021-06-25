@@ -1,9 +1,14 @@
 # import
 import torch
 from glob import glob
-from os.path import isfile, join
+from os.path import isfile, join, basename
+from os import walk, makedirs
+import numpy as np
+import matplotlib.pyplot as plt
+import pickle
 from ruamel.yaml import safe_load
 from torchvision import transforms
+from tqdm import tqdm
 
 # def
 
@@ -126,3 +131,43 @@ def get_transform_from_file(filepath):
     else:
         assert False, 'please check the transform config path: {}'.format(
             filepath)
+
+
+def pytorch_mnist_to_png(data_path):
+    """Export MNIST images to PNG .
+
+    Args:
+        data_path (str): the data path.
+    """
+    for dirpath, _, files in walk(data_path):
+        if len(list(filter(lambda x: '.pt' in x, files))) > 0:
+            break
+    for f in files:
+        stage = 'train' if 'train' in basename(f) else 'test'
+        target_path = join(data_path, 'MNIST/images/{}'.format(stage))
+        makedirs(target_path, exist_ok=True)
+        data, label = torch.load(join(dirpath, f))
+        num_data = len(data)
+        for idx in tqdm(range(num_data)):
+            plt.imsave(join(target_path, '{}_{}.png'.format(str(idx).zfill(
+                len(str(num_data))), label[idx])), arr=data[idx], cmap='gray', format='png')
+
+
+def pytorch_cifar10_to_png(data_path):
+    """Export CIFAR10 images to PNG .
+
+    Args:
+        data_path (str): the data path.
+    """
+    files = sorted(glob(join(data_path, 'cifar-10-batches-py/*_batch*')))
+    for file in files:
+        with open(file, 'rb') as f:
+            content = pickle.load(f, encoding='bytes')
+        data = np.reshape(content[b'data'], (-1, 32, 32, 3), 'F')
+        filenames = content[b'filenames']
+        stage = 'train' if 'data_batch' in file else 'test'
+        target_path = join(data_path, 'images/{}'.format(stage))
+        makedirs(target_path, exist_ok=True)
+        for idx in tqdm(range(len(data))):
+            plt.imsave(join(target_path, filenames[idx].decode(
+                'utf-8')), arr=data[idx], format='png')

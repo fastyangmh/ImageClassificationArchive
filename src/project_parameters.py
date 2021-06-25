@@ -12,6 +12,7 @@ from src.utils import load_yaml
 class ProjectParameters:
     """Constructs a ProjectParameters class to store the parameters.
     """
+
     def __init__(self):
         """Initialize the class.
         """
@@ -79,6 +80,10 @@ class ProjectParameters:
                                   help='the path of the pre-trained model checkpoint.')
         self._parser.add_argument('--optimizer_config_path', type=str,
                                   default='config/optimizer.yaml', help='the optimizer config path.')
+
+        # predict
+        self._parser.add_argument('--gui', action='store_true', default=False,
+                                  help='whether to use the gui window while predicting.')
 
         # evaluate
         self._parser.add_argument(
