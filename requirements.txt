@@ -8,3 +8,4 @@ torchvision
 pandas
 ray[tune]
 ruamel.yaml
+matplotlib
