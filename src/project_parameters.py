@@ -187,7 +187,7 @@ class ProjectParameters:
         # base
         project_parameters.data_path = abspath(
             path=project_parameters.data_path)
-        if project_parameters.predefined_dataset is not None:
+        if project_parameters.predefined_dataset is not None and project_parameters.mode != 'predict':
             project_parameters.data_path = join(
                 project_parameters.data_path, project_parameters.predefined_dataset)
         project_parameters.use_cuda = torch.cuda.is_available(
