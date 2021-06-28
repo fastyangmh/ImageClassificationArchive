@@ -61,10 +61,11 @@ class GUI:
     def _load_image(self):
         """Load image file .
         """
+        color_mode = 'RGB' if self.project_parameters.in_chans == 3 else 'L'
         self.data_path = filedialog.askopenfilename(
             initialdir='./', title='Select image file', filetypes=(('png files', '*.png'), ('jpeg files', '*.jpg')))
         image = self._resize_image(image=Image.open(
-            fp=self.data_path).convert('RGB'))
+            fp=self.data_path).convert(color_mode))
         imageTk = ImageTk.PhotoImage(image)
         self.gallery_image_label.config(image=imageTk)
         self.gallery_image_label.image = imageTk

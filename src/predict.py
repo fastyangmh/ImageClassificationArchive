@@ -37,7 +37,8 @@ class Predict:
         """
         result = []
         if '.png' in data_path or '.jpg' in data_path:
-            image = Image.open(fp=data_path).convert('RGB')
+            color_mode = 'RGB' if self.project_parameters.in_chans == 3 else 'L'
+            image = Image.open(fp=data_path).convert(color_mode)
             image = self.transform(image)[None, :]
             with torch.no_grad():
                 result.append(self.model(image).tolist()[0])
