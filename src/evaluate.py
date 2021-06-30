@@ -144,14 +144,18 @@ def evaluate(project_parameters):
     results = _get_k_fold_result(project_parameters=project_parameters)
     results = _parse_k_fold_result(results=results)
     print('-'*30)
-    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
-                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
     print('k-fold cross-validation training accuracy mean:\t{} ± {}'.format(*
                                                                             _calculate_mean_and_error(arrays=results['train'][1])))
+    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
+                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
     print('k-fold cross-validation validation accuracy mean:\t{} ± {}'.format(*
                                                                               _calculate_mean_and_error(arrays=results['val'][1])))
+    print('k-fold cross-validation validation loss mean:\t{} ± {}'.format(*
+                                                                          _calculate_mean_and_error(arrays=results['val'][0])))
     print('k-fold cross-validation test accuracy mean:\t{} ± {}'.format(*
                                                                         _calculate_mean_and_error(arrays=results['test'][1])))
+    print('k-fold cross-validation test loss mean:\t{} ± {}'.format(*
+                                                                    _calculate_mean_and_error(arrays=results['test'][0])))
     rmtree(path=project_parameters.k_fold_data_path)
     return results
 
