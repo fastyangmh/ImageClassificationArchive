@@ -15,8 +15,16 @@ import numpy as np
 
 
 def _get_hyperparameter_space(project_parameters):
+    """Get the hyperparameter space for the project .
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        dict: the dictionary contains the various hyperparameters.
+    """
     hyperparameter_space_config = load_yaml(
-        file_path=project_parameters.hyperparameter_config_path)
+        filepath=project_parameters.hyperparameter_config_path)
     assert hyperparameter_space_config is not None, 'the hyperparameter space config has not any content.'
     hyperparameter_space = {}
     for parameter_type in hyperparameter_space_config.keys():
@@ -38,6 +46,15 @@ def _get_hyperparameter_space(project_parameters):
 
 
 def _set_tune_project_parameters(hyperparameter, project_parameters):
+    """Set project_parameters .
+
+    Args:
+        hyperparameter (dict): the dictionary contains the various hyperparameters.
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        argparse.Namespace: the parameters for the project modified by hyperparameter.
+    """
     for k, v in hyperparameter.items():
         if type(v) == str:
             exec('project_parameters.{}="{}"'.format(k, v))
@@ -49,6 +66,14 @@ def _set_tune_project_parameters(hyperparameter, project_parameters):
 
 
 def _parse_tune_result(result):
+    """Extract loss and accuracy .
+
+    Args:
+        result (dict): the dictionary contains the results of train, validation, test.
+
+    Returns:
+        tuple: the tuple contains the dictionary of loss and accuracy.
+    """
     loss_dict, accuracy_dict = {}, {}
     for stage in ['train', 'val', 'test']:
         loss, accuracy = result[stage][0].values()
@@ -58,6 +83,12 @@ def _parse_tune_result(result):
 
 
 def _tune_function(hyperparameter, project_parameters):
+    """The objective function for hyperparameter tuning.
+
+    Args:
+        hyperparameter (dict): the dictionary contains the various hyperparameters.
+        project_parameters (argparse.Namespace): the parameters for the project.
+    """
     if project_parameters.tune_debug:
         ray.tune.report(accuracy_difference=sum(
             [value for value in hyperparameter.values() if type(value) is not str]))
@@ -77,6 +108,14 @@ def _tune_function(hyperparameter, project_parameters):
 
 
 def tune(project_parameters):
+    """Tuning the model to find the best parameters.
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        dict: the dictionary contains the tuning result.
+    """
     project_parameters.mode = 'train'
     hyperparameter_space = _get_hyperparameter_space(
         project_parameters=project_parameters)
@@ -106,8 +145,14 @@ def tune(project_parameters):
     print('best trial result: {}'.format(
         best_trial.last_result['accuracy_difference']))
     print('best trial config: {}'.format(best_trial.config))
-    print('best trial config command: --num_workers {}{}'.format(project_parameters.num_workers,
-                                                                 (' --{} {}'*len(best_trial.config)).format(*np.concatenate(list(zip(best_trial.config.keys(), best_trial.config.values()))))))
+    if 'parameters_config_path' in project_parameters:
+        output = 'num_workers: {}'.format(project_parameters.num_workers)
+        for k, v in best_trial.config.items():
+            output += '\n{}: {}'.format(k, v)
+        print('best trial config command:\n{}'.format(output))
+    else:
+        print('best trial config command: --num_workers {}{}'.format(project_parameters.num_workers, (' --{} {}' *
+                                                                                                      len(best_trial.config)).format(*np.concatenate(list(zip(best_trial.config.keys(), best_trial.config.values()))))))
     shutdown()
     return result
 

@@ -12,16 +12,33 @@ import numpy as np
 
 
 class Predict:
-    def __init__(self, project_parameters) -> None:
+    """Class method for Predict .
+    """
+
+    def __init__(self, project_parameters):
+        """Initialize the class.
+
+        Args:
+            project_parameters (argparse.Namespace): the parameters for the project.
+        """
         self.project_parameters = project_parameters
         self.model = create_model(project_parameters=project_parameters).eval()
         self.transform = get_transform_from_file(
-            file_path=project_parameters.transform_config_path)['predict']
+            filepath=project_parameters.transform_config_path)['predict']
 
-    def get_result(self, data_path):
+    def __call__(self, data_path):
+        """Predict the given the data_path of data.
+
+        Args:
+            data_path (str): the data path.
+
+        Returns:
+            numpy.ndarray: the model predicted result.
+        """
         result = []
         if '.png' in data_path or '.jpg' in data_path:
-            image = Image.open(fp=data_path).convert('RGB')
+            color_mode = 'RGB' if self.project_parameters.in_chans == 3 else 'L'
+            image = Image.open(fp=data_path).convert(color_mode)
             image = self.transform(image)[None, :]
             with torch.no_grad():
                 result.append(self.model(image).tolist()[0])
@@ -40,9 +57,9 @@ if __name__ == '__main__':
     project_parameters = ProjectParameters().parse()
 
     # predict the data path
-    result = Predict(project_parameters=project_parameters).get_result(
+    result = Predict(project_parameters=project_parameters)(
         data_path=project_parameters.data_path)
     # use [:-1] to remove the latest comma
     print(('{},'*project_parameters.num_classes).format(*
-                                                        project_parameters.classes.keys())[:-1])
+                                                        project_parameters.classes)[:-1])
     print(result)

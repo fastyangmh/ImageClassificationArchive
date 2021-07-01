@@ -14,18 +14,33 @@ from shutil import copy2, copytree, rmtree
 
 
 def _train_val_dataset_from_data_path(project_parameters):
+    """Loads the train and validation dataset from the data path then combines it.
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        dict: the dictionary contains the data and label.
+    """
     data, label = [], []
     for stage in ['train', 'val']:
-        for c in project_parameters.classes.keys():
-            files = get_files(file_path=join(
+        for c in project_parameters.classes:
+            files = get_files(filepath=join(
                 project_parameters.data_path, '{}/{}'.format(stage, c)), file_type=['jpg', 'png'])
             data += sorted(files)
-            label += [project_parameters.classes[c]]*len(files)
+            label += [project_parameters.class_to_idx[c]]*len(files)
     return {'data': np.array(data), 'label': np.array(label)}
 
 
 def _copy_files_to_destination_path(files, destination_path, project_parameters):
-    for c in project_parameters.classes.keys():
+    """Copy files to destination path .
+
+    Args:
+        files (numpy.ndarray): the files path.
+        destination_path (str): the destination path.
+        project_parameters (argparse.Namespace): the parameters for the project.
+    """
+    for c in project_parameters.classes:
         makedirs(name=join(destination_path, c), exist_ok=True)
         for f in files:
             if c in f:
@@ -33,6 +48,12 @@ def _copy_files_to_destination_path(files, destination_path, project_parameters)
 
 
 def _create_k_fold_data(project_parameters, dataset):
+    """Creates data for k-fold cross-validation to evaluate.
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+        dataset (dict): the dictionary contains the data and label.
+    """
     skf = StratifiedKFold(n_splits=project_parameters.n_splits, shuffle=True)
     for idx, (train_index, val_index) in tqdm(enumerate(skf.split(X=dataset['data'], y=dataset['label'])), total=project_parameters.n_splits):
         x_train = dataset['data'][train_index]
@@ -50,6 +71,14 @@ def _create_k_fold_data(project_parameters, dataset):
 
 
 def _get_k_fold_result(project_parameters):
+    """Collect k-fold cross-validation results .
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        dict: the training result in every time.
+    """
     print('start k-fold cross-validation')
     results = {}
     directories = sorted(glob(join(project_parameters.k_fold_data_path, '*/')))
@@ -63,6 +92,14 @@ def _get_k_fold_result(project_parameters):
 
 
 def _parse_k_fold_result(results):
+    """Parse k-fold cross-validation results .
+
+    Args:
+        results (dict): the training result in every time.
+
+    Returns:
+        dict: the dictionary contains the total loss and accuracy of train, validation, and test.
+    """
     train_loss, val_loss, test_loss = [], [], []
     train_acc, val_acc, test_acc = [], [], []
     for result in results.values():
@@ -80,10 +117,26 @@ def _parse_k_fold_result(results):
 
 
 def _calculate_mean_and_error(arrays):
-    return np.mean(arrays), (max(arrays)-min(arrays)/2)
+    """Calculate the mean and error
+
+    Args:
+        arrays (numpy.ndarray): the numpy arrays.
+
+    Returns:
+        tuple: the mean and error of arrays.
+    """
+    return np.mean(arrays), (max(arrays)-min(arrays))/2
 
 
 def evaluate(project_parameters):
+    """Evaluate the model with parameters..
+
+    Args:
+        project_parameters (argparse.Namespace): the parameters for the project.
+
+    Returns:
+        dict: the dictionary contains the results of train, validation, test.
+    """
     train_val_dataset = _train_val_dataset_from_data_path(
         project_parameters=project_parameters)
     _create_k_fold_data(project_parameters=project_parameters,
@@ -91,14 +144,18 @@ def evaluate(project_parameters):
     results = _get_k_fold_result(project_parameters=project_parameters)
     results = _parse_k_fold_result(results=results)
     print('-'*30)
-    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
-                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
     print('k-fold cross-validation training accuracy mean:\t{} ± {}'.format(*
                                                                             _calculate_mean_and_error(arrays=results['train'][1])))
+    print('k-fold cross-validation training loss mean:\t{} ± {}'.format(*
+                                                                        _calculate_mean_and_error(arrays=results['train'][0])))
     print('k-fold cross-validation validation accuracy mean:\t{} ± {}'.format(*
                                                                               _calculate_mean_and_error(arrays=results['val'][1])))
+    print('k-fold cross-validation validation loss mean:\t{} ± {}'.format(*
+                                                                          _calculate_mean_and_error(arrays=results['val'][0])))
     print('k-fold cross-validation test accuracy mean:\t{} ± {}'.format(*
                                                                         _calculate_mean_and_error(arrays=results['test'][1])))
+    print('k-fold cross-validation test loss mean:\t{} ± {}'.format(*
+                                                                    _calculate_mean_and_error(arrays=results['test'][0])))
     rmtree(path=project_parameters.k_fold_data_path)
     return results
 
