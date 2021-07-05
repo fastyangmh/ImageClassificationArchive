@@ -27,7 +27,7 @@ def main(project_parameters):
         else:
             evaluate(project_parameters=project_parameters)
     elif project_parameters.mode == 'predict':
-        if project_parameters.gui:
+        if project_parameters.use_gui:
             gui = GUI(project_parameters=project_parameters)
             gui.run()
         else:
