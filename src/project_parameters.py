@@ -227,6 +227,9 @@ class ProjectParameters:
             # the PyTorch lightning needs to get validation loss in every training epoch.
             project_parameters.val_iter = 1
 
+        # predict
+        project_parameters.use_gui = project_parameters.gui
+
         # evaluate
         if project_parameters.mode == 'evaluate':
             project_parameters.k_fold_data_path = './k_fold_dataset{}'.format(
