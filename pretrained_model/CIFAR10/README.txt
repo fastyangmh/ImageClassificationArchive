@@ -1,6 +1,6 @@
 The CIFAR10_mnasnet_small_checkpoint.ckpt is used the following parameters to train.
 
-python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --backbone_model mnasnet_small --batch_size 512 --lr 0.03188473363097435 --lr_scheduler CosineAnnealingLR --step_size 2 --train_iter 190
+python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --backbone_model mnasnet_small --batch_size 512 --num_workers 5 --train_iter 108 --step_size 2 --lr 0.006973673925118025 --lr_scheduler CosineAnnealingLR
 
 The CIFAR10_mnasnet_small_checkpoint.ckpt training result is the following.
 
