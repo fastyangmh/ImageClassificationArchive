@@ -7,8 +7,73 @@ from torchvision.datasets.folder import ImageFolder
 from src.project_parameters import ProjectParameters
 from pytorch_lightning import LightningDataModule
 from src.utils import get_transform_from_file
+from typing import Optional, Callable
+import numpy as np
 
 # class
+
+
+class ImageFolder(ImageFolder):
+    """ImageFolder class for training, evaluation, tuning .
+    """
+
+    def __init__(self, root: str, transform: Optional[Callable], loss_function, num_classes, alpha):
+        super().__init__(root, transform=transform)
+        self.loss_function = loss_function
+        self.num_classes = num_classes
+        self.alpha = alpha
+
+    def __getitem__(self, index: int):
+        data, label = super().__getitem__(index)
+        if self.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.num_classes)[label]
+            # label smoothing
+            label = label*(1-self.alpha) + (self.alpha/self.num_classes)
+            label = label.astype(np.float32)
+        return data, label
+
+
+class MNIST(MNIST):
+    """Special MNIT class .
+    """
+
+    def __init__(self, root: str, train: bool, transform: Optional[Callable], download: bool, loss_function, num_classes, alpha):
+        super().__init__(root, train=train, transform=transform, download=download)
+        self.loss_function = loss_function
+        self.num_classes = num_classes
+        self.alpha = alpha
+
+    def __getitem__(self, index: int):
+        data, label = super().__getitem__(index)
+        if self.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.num_classes)[label]
+            # label smoothing
+            label = label*(1-self.alpha) + (self.alpha/self.num_classes)
+            label = label.astype(np.float32)
+        return data, label
+
+
+class CIFAR10(CIFAR10):
+    """Special CIFAR10 class .
+    """
+
+    def __init__(self, root: str, train: bool, transform: Optional[Callable], download: bool, loss_function, num_classes, alpha):
+        super().__init__(root, train=train, transform=transform, download=download)
+        self.loss_function = loss_function
+        self.num_classes = num_classes
+        self.alpha = alpha
+
+    def __getitem__(self, index: int):
+        data, label = super().__getitem__(index)
+        if self.loss_function == 'BCELoss':
+            # one-hot encoding
+            label = np.eye(self.num_classes)[label]
+            # label smoothing
+            label = label*(1-self.alpha) + (self.alpha/self.num_classes)
+            label = label.astype(np.float32)
+        return data, label
 
 
 class DataModule(LightningDataModule):
@@ -32,8 +97,8 @@ class DataModule(LightningDataModule):
         if self.project_parameters.predefined_dataset is None:
             self.dataset = {}
             for stage in ['train', 'val', 'test']:
-                self.dataset[stage] = ImageFolder(root=join(
-                    self.project_parameters.data_path, stage), transform=self.transform_dict[stage])
+                self.dataset[stage] = ImageFolder(root=join(self.project_parameters.data_path, stage), transform=self.transform_dict[stage],
+                                                  loss_function=self.project_parameters.loss_function, num_classes=self.project_parameters.num_classes, alpha=self.project_parameters.alpha)
                 # modify the maximum number of files
                 if self.project_parameters.max_files is not None:
                     lengths = (self.project_parameters.max_files, len(
@@ -47,9 +112,9 @@ class DataModule(LightningDataModule):
                 assert self.dataset['train'].class_to_idx == self.project_parameters.class_to_idx, 'the classes is not the same. please check the classes of data. from ImageFolder: {} from argparse: {}'.format(
                     self.dataset['train'].class_to_idx, self.project_parameters.class_to_idx)
         else:
-            train_set = eval('{}(root=self.project_parameters.data_path, train=True, download=True, transform=self.transform_dict["train"])'.format(
+            train_set = eval('{}(root=self.project_parameters.data_path, train=True, download=True, transform=self.transform_dict["train"], loss_function=self.project_parameters.loss_function, num_classes=self.project_parameters.num_classes, alpha=self.project_parameters.alpha)'.format(
                 self.project_parameters.predefined_dataset))
-            test_set = eval('{}(root=self.project_parameters.data_path, train=False, download=True, transform=self.transform_dict["test"])'.format(
+            test_set = eval('{}(root=self.project_parameters.data_path, train=False, download=True, transform=self.transform_dict["test"], loss_function=self.project_parameters.loss_function, num_classes=self.project_parameters.num_classes, alpha=self.project_parameters.alpha)'.format(
                 self.project_parameters.predefined_dataset))
             # modify the maximum number of files
             if self.project_parameters.max_files is not None:
