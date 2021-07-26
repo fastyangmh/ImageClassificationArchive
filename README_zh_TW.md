@@ -299,7 +299,7 @@ pytorch_mnist_to_png(data_path=data_path)
 
 #將CIFAR-10轉換成png圖片
 from src.utils import pytorch_cifar10_to_png
-data_path = 'data/MNIST/'
+data_path = 'data/CIFAR10/'
 pytorch_cifar10_to_png(data_path=data_path)
 ```
 
