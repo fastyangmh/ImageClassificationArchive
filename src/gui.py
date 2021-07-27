@@ -82,7 +82,7 @@ class GUI:
             self.result_label.config(
                 text=self.project_parameters.classes[probability.argmax()])
         else:
-            messagebox.showinfo(
+            messagebox.showerror(
                 title='Error!', message='please select an image!')
 
     def run(self):
