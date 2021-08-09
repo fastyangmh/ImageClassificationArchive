@@ -54,7 +54,7 @@ class GUI:
         width, height = image.size
         ratio = max(self.window.winfo_height(),
                     self.window.winfo_width())/max(width, height)
-        ratio *= 0.5
+        ratio *= 0.25
         image = image.resize((int(width*ratio), int(height*ratio)))
         return image
 
