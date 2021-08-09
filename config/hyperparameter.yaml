@@ -9,7 +9,13 @@ float:
   lr:
     - 1e-4
     - 1e-1
+  alpha:
+    - 0.
+    - 1.
 choice:
   lr_scheduler:
     - CosineAnnealingLR
     - StepLR
+  loss_function:
+    - BCELoss
+    - CrossEntropyLoss

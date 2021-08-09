@@ -27,6 +27,8 @@ precision: 32
 in_chans: 3
 checkpoint_path: null
 optimizer_config_path: config/optimizer.yaml
+alpha: 0.2
+loss_function: BCELoss
 
 # evaluate
 n_splits: 5

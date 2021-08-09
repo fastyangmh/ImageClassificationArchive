@@ -81,6 +81,10 @@ class ProjectParameters:
                                   help='the path of the pre-trained model checkpoint.')
         self._parser.add_argument('--optimizer_config_path', type=str,
                                   default='config/optimizer.yaml', help='the optimizer config path.')
+        self._parser.add_argument('--loss_function', type=str, default='BCELoss', choices=[
+                                  'BCELoss', 'CrossEntropyLoss'], help='the loss function.')
+        self._parser.add_argument(
+            '--alpha', type=float, default=0.2, help='the weight of label smoothing.')
 
         # predict
         self._parser.add_argument('--gui', action='store_true', default=False,
@@ -218,6 +222,9 @@ class ProjectParameters:
         if isfile(project_parameters.backbone_model):
             project_parameters.backbone_model = abspath(
                 project_parameters.backbone_model)
+        if not 0. <= project_parameters.alpha <= 1.:
+            assert False, 'please check the alpha value, the alpha value is limit from 0 to 1. input alpha value is {}'.format(
+                project_parameters.alpha)
 
         # train
         if project_parameters.val_iter is None:
