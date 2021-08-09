@@ -20,6 +20,7 @@
 - [x] Transfer learning
 - [x] GUI while predicting
 - [x] Automatic mixed-precision
+- [x] Label smoothing
 
 ## **安裝套件**
 

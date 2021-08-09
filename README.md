@@ -20,6 +20,7 @@ This project has provided the following features:
 - [x] Transfer learning
 - [x] GUI while predicting
 - [x] Automatic mixed-precision
+- [x] Label smoothing
 
 ## **Installation**
 
@@ -276,6 +277,7 @@ choice: #selection space such as learning rate scheduler, etc.
 This project provides pre-trained models of `MNIST` and `CIFAR-10`. The classification model uses `mnasnet_small`. The model parameters are about `761 K`. 
 
 ### **Training commands**
+
 The training parameters and results are listed below:
 ```bash
 #MNIST, other parameters are default values
