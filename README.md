@@ -273,19 +273,33 @@ choice: #selection space such as learning rate scheduler, etc.
 
 ## **Pre-trained weight**
 
-This project provides pre-trained models of `MNIST` and `CIFAR-10`. The classification model uses `mnasnet_small`. The model parameters are about `761 K`. The training parameters and results are listed below:
+This project provides pre-trained models of `MNIST` and `CIFAR-10`. The classification model uses `mnasnet_small`. The model parameters are about `761 K`. 
+
+### **Training commands**
+The training parameters and results are listed below:
 ```bash
 #MNIST, other parameters are default values
-#training dataset accuracy: 93.6107878989%
-#validation dataset accuracy: 93.072219193%
-#test dataset accuracy: 97.1892234683%
-python main.py --mode train --data_path data/ --predefined_dataset MNIST --classes None --backbone_model mnasnet_small --in_chans 1 --batch_size 512 --lr 0.019965407596926204 --lr_scheduler StepLR --step_size 9 --train_iter 112
+#training dataset accuracy: 90.9229166667%
+#validation dataset accuracy: 90.6970301207%
+#test dataset accuracy: 95.5003955696%
+python main.py --mode train --data_path data/ --predefined_dataset MNIST --classes None --in_chans 1 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 138 --step_size 5 --lr 0.0003105158274479257 --alpha 0.20573437708578535 --lr_scheduler CosineAnnealingLR --loss_function BCELoss
 
 #CIFAR10, other parameters are default values
-#training dataset accuracy: 62.1069026899%
-#validation dataset accuracy: 61.1735984683%
-#test dataset accuracy: 61.9376149774%
-python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --backbone_model mnasnet_small --batch_size 512 --lr 0.03188473363097435 --lr_scheduler CosineAnnealingLR --step_size 2 --train_iter 190
+#training dataset accuracy: 52.0592052716%
+#validation dataset accuracy: 50.1582278481%
+#test dataset accuracy: 53.6194620253%
+python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --in_chans 3 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 144 --step_size 2 --lr 0.0002921712874576203 --alpha 0.6796752976738497 --lr_scheduler CosineAnnealingLR --loss_function BCELoss
+```
+
+### **Prediction commands**
+
+To use pre-trained models to make predictions, follow the instructions below:
+```bash
+#MNIST, other parameters are default values
+python main.py --mode predict --data_path data/ --predefined_dataset MNIST --classes None --in_chans 1 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 138 --step_size 5 --lr 0.0003105158274479257 --alpha 0.20573437708578535 --lr_scheduler CosineAnnealingLR --loss_function BCELoss --checkpoint_path pretrained_model/MNIST/MNIST_mnasnet_small_checkpoint.ckpt
+
+#CIFAR10, other parameters are default values
+python main.py --mode predict --data_path data/ --predefined_dataset CIFAR10 --classes None --in_chans 3 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 144 --step_size 2 --lr 0.0002921712874576203 --alpha 0.6796752976738497 --lr_scheduler CosineAnnealingLR --loss_function BCELoss --checkpoint_path pretrained_model/CIFAR10/CIFAR10_mnasnet_small_checkpoint.ckpt
 ```
 
 ## **Tool**
