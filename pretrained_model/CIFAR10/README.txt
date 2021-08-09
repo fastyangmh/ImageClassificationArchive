@@ -1,57 +1,57 @@
 The CIFAR10_mnasnet_small_checkpoint.ckpt is used the following parameters to train.
 
-python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --backbone_model mnasnet_small --batch_size 512 --num_workers 5 --train_iter 108 --step_size 2 --lr 0.006973673925118025 --lr_scheduler CosineAnnealingLR
+python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --in_chans 3 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 144 --step_size 2 --lr 0.0002921712874576203 --alpha 0.6796752976738497 --lr_scheduler CosineAnnealingLR --loss_function BCELoss
 
 The CIFAR10_mnasnet_small_checkpoint.ckpt training result is the following.
 
 the train dataset confusion matrix:
             airplane  automobile  bird   cat  deer   dog  frog  horse  ship  truck
-airplane        3154          70   140    40    64    42    20    117   242     94
-automobile        59        3348    35    20     3    46    25     53    87    287
-bird             253          25  2551   143   377   204   192    182    53     33
-cat               96          48   250  1873   206   929   216    247    67     84
-deer              71           3   265   113  2840   117   208    300    32     34
-dog               50          34   121   371   171  2794    73    255    59     34
-frog              25          14   136   177   157   100  3322     50    33     45
-horse             54          24    90    98   247   188    36   3198    34     60
-ship             257          98    56    32    23    41    27     45  3366     57
-truck            100         442    32    32    17    78    34    142   106   3007
+airplane        2118         229   329   124    39   114    42    155   617    216
+automobile        82        2547    59    92     8    53   126    132   162    702
+bird             298         167  1785   295   325   288   367    297   142     49
+cat              115         215   283  1475   131   714   484    291   180    128
+deer             120          47   555   284  1408   202   660    518   136     53
+dog               95         208   299   783   131  1559   213    417   170     87
+frog              29          82   196   356   203   134  2812    133    53     61
+horse            108         238   233   320   199   334   163   2185    94    155
+ship             326         263   117   144    29    88    49     57  2703    226
+truck            135         825    47   133    13    58   129    192   222   2236
 --------------------------------------------------------------------------------
-test accuracy: 0.7356111550632911, test loss: 0.7510817699794528
+test accuracy: 0.520592052715655, test loss: 0.3128224863602331
 --------------------------------------------------------------------------------
 
 test the val dataset
 the val dataset confusion matrix:
 LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
             airplane  automobile  bird  cat  deer  dog  frog  horse  ship  truck
-airplane         796          18    40   12    27   15     6     14    67     22
-automobile        20         862     9    3     2    8    11      8    27     87
-bird              78           4   566   41    99   59    55     56    15     14
-cat               21          15    63  433    44  242    64     78    10     14
-deer              13           1    64   43   701   33    63     82    10      7
-dog               18          12    42   83    52  707    21     82    14      7
-frog               3           3    35   47    48   32   725     18     8     22
-horse             12           6    18   26    58   53    15    763    11      9
-ship              64          36    24   15     6   11     7      8   809     18
-truck             17         111     8   10     6   17     8     40    25    768
+airplane         552          52    87   29     8   26    14     37   174     38
+automobile        27         642    12   23     3   12    31     29    56    202
+bird              81          41   402   69    86   74    91     87    37     19
+cat               27          49    84  328    29  185   129     76    53     24
+deer              26          11   134   69   353   57   178    154    23     12
+dog               23          46    82  186    43  418    60    109    44     27
+frog               7          17    59   75    57   38   619     34    15     20
+horse             26          56    65   59    52   75    44    528    25     41
+ship              90          64    26   41     7   23    13     21   636     77
+truck             20         240    14   44     2    7    30     56    59    538
 --------------------------------------------------------------------------------
-test accuracy: 0.7126608461141586, test loss: 0.838104110956192
+test accuracy: 0.5015822784810127, test loss: 0.3134946626952932
 --------------------------------------------------------------------------------
 
 test the test dataset
 the test dataset confusion matrix:
 LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
             airplane  automobile  bird  cat  deer  dog  frog  horse  ship  truck
-airplane         761          15    51   14    19    8     4     27    81     20
-automobile        19         835     5    4     0   14     7     10    18     88
-bird              71          10   656   42    81   57    41     31     7      4
-cat               27           6    73  479    55  229    55     47    14     15
-deer              17           1    82   27   695   35    63     68     7      5
-dog               15           5    35   96    40  719    18     47    12     13
-frog               5           4    31   65    43   30   791     14     7     10
-horse             22           3    23   24    61   72     9    763     8     15
-ship              78          21    16    8     7   11     4      5   827     23
-truck             32         117     7   13     0   17     7     18    37    752
+airplane         529          37   105   27     5   40     6     24   185     42
+automobile        21         612    11   32     2   37    21     30    63    171
+bird              77          30   422   69    86  120    88     63    35     10
+cat               22          26    75  368    25  252   101     53    50     28
+deer              33          10   114   79   419   70   126    110    28     11
+dog               24          23    51  169    27  550    25     78    42     11
+frog               1          15    59   84    48   54   689     28     7     15
+horse             33          37    42   68    58  155    32    501    35     39
+ship              58          51    27   32     4   42     9     15   717     45
+truck             37         186     9   32     3   27    29     39    93    545
 --------------------------------------------------------------------------------
-test accuracy: 0.7271139711141587, test loss: 0.7801244765520096
+test accuracy: 0.5361946202531646, test loss: 0.31253164252148397
 --------------------------------------------------------------------------------
