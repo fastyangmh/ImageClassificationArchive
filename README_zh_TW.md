@@ -20,6 +20,7 @@
 - [x] Transfer learning
 - [x] GUI while predicting
 - [x] Automatic mixed-precision
+- [x] Label smoothing
 
 ## **安裝套件**
 
@@ -272,20 +273,34 @@ choice: #選擇空間如學習率下降器等
 ```
 
 ## **預訓練權重**
+本專案提供`MNIST`與`CIFAR-10`的預訓練模型，分類模型使用`mnasnet_small`，該模型參數量約為`761 K`。
 
-本專案提供`MNIST`與`CIFAR-10`的預訓練模型，分類模型使用`mnasnet_small`，該模型參數量約為`761 K`，以下列出訓練的參數與結果：
+### **訓練指令**
+
+以下列出訓練的參數與結果：
 ```bash
 #MNIST，其餘參數皆為預設值
-#訓練集準確率：93.6107878989%
-#驗證集準確率：93.072219193%
-#測試集準確率：97.1892234683%
-python main.py --mode train --data_path data/ --predefined_dataset MNIST --classes None --backbone_model mnasnet_small --in_chans 1 --batch_size 512 --lr 0.019965407596926204 --lr_scheduler StepLR --step_size 9 --train_iter 112
+#訓練集準確率：90.9229166667%
+#驗證集準確率：90.6970301207%
+#測試集準確率：95.5003955696%
+python main.py --mode train --data_path data/ --predefined_dataset MNIST --classes None --in_chans 1 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 138 --step_size 5 --lr 0.0003105158274479257 --alpha 0.20573437708578535 --lr_scheduler CosineAnnealingLR --loss_function BCELoss
 
 #CIFAR10，其餘參數皆為預設值
-#訓練集準確率：62.1069026899%
-#驗證集準確率：61.1735984683%
-#測試集準確率：61.9376149774%
-python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --backbone_model mnasnet_small --batch_size 512 --lr 0.03188473363097435 --lr_scheduler CosineAnnealingLR --step_size 2 --train_iter 190
+#訓練集準確率：52.0592052716%
+#驗證集準確率：50.1582278481%
+#測試集準確率：53.6194620253%
+python main.py --mode train --data_path data/ --predefined_dataset CIFAR10 --classes None --in_chans 3 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 144 --step_size 2 --lr 0.0002921712874576203 --alpha 0.6796752976738497 --lr_scheduler CosineAnnealingLR --loss_function BCELoss
+```
+
+### **預測指令**
+
+若要使用預訓練權重做預測，請根據以下指令：
+```bash
+#MNIST，其餘參數皆為預設值
+python main.py --mode predict --data_path data/ --predefined_dataset MNIST --classes None --in_chans 1 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 138 --step_size 5 --lr 0.0003105158274479257 --alpha 0.20573437708578535 --lr_scheduler CosineAnnealingLR --loss_function BCELoss --checkpoint_path pretrained_model/MNIST/MNIST_mnasnet_small_checkpoint.ckpt
+
+#CIFAR10，其餘參數皆為預設值
+python main.py --mode predict --data_path data/ --predefined_dataset CIFAR10 --classes None --in_chans 3 --batch_size 128 --backbone_model mnasnet_small --num_workers 4 --train_iter 144 --step_size 2 --lr 0.0002921712874576203 --alpha 0.6796752976738497 --lr_scheduler CosineAnnealingLR --loss_function BCELoss --checkpoint_path pretrained_model/CIFAR10/CIFAR10_mnasnet_small_checkpoint.ckpt
 ```
 
 ## **工具**
