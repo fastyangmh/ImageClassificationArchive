@@ -3,12 +3,14 @@ from os.path import join
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST, CIFAR10
 from torch.utils.data.dataset import random_split
-from torchvision.datasets.folder import ImageFolder
+from torchvision.datasets import ImageFolder
 from src.project_parameters import ProjectParameters
 from pytorch_lightning import LightningDataModule
 from src.utils import get_transform_from_file
 from typing import Optional, Callable
 import numpy as np
+from PIL import Image
+
 
 # class
 
@@ -17,14 +19,22 @@ class ImageFolder(ImageFolder):
     """ImageFolder class for training, evaluation, tuning .
     """
 
-    def __init__(self, root: str, transform: Optional[Callable], loss_function, num_classes, alpha):
-        super().__init__(root, transform=transform)
+    def __init__(self, root: str, transform: Optional[Callable], in_chans, loss_function, num_classes, alpha):
+        super().__init__(root, transform=transform, loader=Image.open)
+        self.in_chans = in_chans
         self.loss_function = loss_function
         self.num_classes = num_classes
         self.alpha = alpha
 
     def __getitem__(self, index: int):
-        data, label = super().__getitem__(index)
+        path, label = self.samples[index]
+        data = self.loader(path)
+        assert self.in_chans == len(
+            data.getbands()), 'please check the channels of image.'
+        if self.transform is not None:
+            data = self.transform(data)
+        if self.target_transform is not None:
+            label = self.target_transform(label)
         if self.loss_function == 'BCELoss':
             # one-hot encoding
             label = np.eye(self.num_classes)[label]
@@ -97,7 +107,7 @@ class DataModule(LightningDataModule):
         if self.project_parameters.predefined_dataset is None:
             self.dataset = {}
             for stage in ['train', 'val', 'test']:
-                self.dataset[stage] = ImageFolder(root=join(self.project_parameters.data_path, stage), transform=self.transform_dict[stage],
+                self.dataset[stage] = ImageFolder(root=join(self.project_parameters.data_path, stage), transform=self.transform_dict[stage], in_chans=self.project_parameters.in_chans,
                                                   loss_function=self.project_parameters.loss_function, num_classes=self.project_parameters.num_classes, alpha=self.project_parameters.alpha)
                 # modify the maximum number of files
                 if self.project_parameters.max_files is not None:
