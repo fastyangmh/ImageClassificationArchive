@@ -23,6 +23,8 @@ class Predict:
         """
         self.project_parameters = project_parameters
         self.model = create_model(project_parameters=project_parameters).eval()
+        if project_parameters.use_cuda:
+            self.model = self.model.cuda()
         self.transform = get_transform_from_file(
             filepath=project_parameters.transform_config_path)['predict']
 
@@ -40,6 +42,8 @@ class Predict:
             color_mode = 'RGB' if self.project_parameters.in_chans == 3 else 'L'
             image = Image.open(fp=data_path).convert(color_mode)
             image = self.transform(image)[None, :]
+            if self.project_parameters.use_cuda:
+                image = image.cuda()
             with torch.no_grad():
                 result.append(self.model(image).tolist()[0])
         else:
@@ -49,6 +53,8 @@ class Predict:
                                      pin_memory=self.project_parameters.use_cuda, num_workers=self.project_parameters.num_workers)
             with torch.no_grad():
                 for image, _ in data_loader:
+                    if self.project_parameters.use_cuda:
+                        image = image.cuda()
                     result.append(self.model(image).tolist())
         return np.concatenate(result, 0).round(2)
 
