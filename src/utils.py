@@ -1,7 +1,8 @@
 # import
 import torch
 from glob import glob
-from os.path import isfile, join, basename
+from os.path import isfile, join
+from torchvision.datasets import mnist
 from os import walk, makedirs
 import numpy as np
 import matplotlib.pyplot as plt
@@ -139,14 +140,20 @@ def pytorch_mnist_to_png(data_path):
     Args:
         data_path (str): the data path.
     """
+
     for dirpath, _, files in walk(data_path):
-        if len(list(filter(lambda x: '.pt' in x, files))) > 0:
+        if len(list(filter(lambda x: 'ubyte' in x, files))) > 0:
             break
-    for f in files:
-        stage = 'train' if 'train' in basename(f) else 'test'
+    files = {'train': {'image': 'train-images-idx3-ubyte',
+                       'label': 'train-labels-idx1-ubyte'},
+             'test': {'image': 't10k-images-idx3-ubyte',
+                      'label': 't10k-labels-idx1-ubyte'}}
+    for stage in ['train', 'test']:
         target_path = join(data_path, 'MNIST/images/{}'.format(stage))
         makedirs(target_path, exist_ok=True)
-        data, label = torch.load(join(dirpath, f))
+        data = mnist.read_image_file(path=join(dirpath, files[stage]['image']))
+        label = mnist.read_label_file(
+            path=join(dirpath, files[stage]['label']))
         num_data = len(data)
         for idx in tqdm(range(num_data)):
             plt.imsave(join(target_path, '{}_{}.png'.format(str(idx).zfill(
